@@ -8,8 +8,6 @@ import subprocess
 import matplotlib
 matplotlib.use("tkagg")
 
-from colorpicker import ColorPicker
-from fontpicker import FontPicker
 from preferences import Preferences
 from toolbox import ToolBox
 from convertme import ConvertMe
@@ -34,28 +32,6 @@ class MainWindow(tk.Frame):
         self.jobhisfilter = tk.StringVar()
         self.job_starttime = tk.StringVar()
         self.selected_text = tk.StringVar()
-
-        # Define options and set defaults
-        self.jobhisfilter.set("")
-        self.job_starttime_options = [datetime.now().date() - timedelta(days=i) for i in
-                                      range(self.parent.job_history_length.get())]
-        self.job_starttime.set(datetime.now().date())
-
-        self.status_options = OrderedDict()
-        self.status_options["All Jobs"] = "all"
-        self.status_options["Running Jobs"] = "r"
-        self.status_options["Pending Jobs"] = "pd"
-        self.status_options["Completed Jobs"] = "cd"
-        self.status_options["Cancelled Jobs"] = "ca"
-        self.status_options["Timeouted Jobs"] = "to"
-        self.status.set(list(self.status_options.keys())[0])  # set default value to "All Jobs"
-
-        # Configure columns and rows. Allow for resizing in appropriate directions
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-        self.grid(row=0, column=0, sticky="nsew")
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(1, weight=1)
 
         # We have to once again establish the connection to the remote cluster
         # (apparently the established connection from Login does not hold)
@@ -83,6 +59,11 @@ class MainWindow(tk.Frame):
         self.parent.bind("<Return>", self.print_q)
 
     def place_widgets(self):
+        # Configure columns and rows. Allow for resizing in appropriate directions
+        self.grid(row=0, column=0, sticky="nsew")
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(1, weight=1)
+
         # Set up the grids
         self["bg"] = self.parent.background_color.get()
         self.topleft = tk.Frame(self, bg=self.parent.background_color.get())
@@ -98,6 +79,21 @@ class MainWindow(tk.Frame):
         self.topright.columnconfigure(0, weight=1)
         self.mid.columnconfigure(0, weight=1)
         self.mid.rowconfigure(0, weight=1)
+
+        # Define options and set defaults
+        self.jobhisfilter.set("")
+        self.job_starttime_options = [datetime.now().date() - timedelta(days=i) for i in
+                                      range(self.parent.job_history_length.get())]
+        self.job_starttime.set(datetime.now().date())
+
+        self.status_options = OrderedDict()
+        self.status_options["All Jobs"] = "all"
+        self.status_options["Running Jobs"] = "r"
+        self.status_options["Pending Jobs"] = "pd"
+        self.status_options["Completed Jobs"] = "cd"
+        self.status_options["Cancelled Jobs"] = "ca"
+        self.status_options["Timeouted Jobs"] = "to"
+        self.status.set(list(self.status_options.keys())[0])  # set default value to "All Jobs"
 
         # Define the top menu bar
         menubar = tk.Menu(self.parent)
@@ -765,7 +761,7 @@ class MainWindow(tk.Frame):
     def open_visualizer(self, *args):
         pid = self.selected_text.get()
         outputfile = self.locate_output_file(pid)
-        destination = os.path.join(self.master.temp_dir, os.path.basename(outputfile))
+        destination = os.path.join(self.master.tmp, os.path.basename(outputfile))
 
         self.sftp_client.get(outputfile, destination)
 
@@ -782,15 +778,14 @@ class MainWindow(tk.Frame):
         self.log_update("Visualizer mode: {}".format(self.master.visualizer_mode.get()))
 
         if self.master.visualizer_mode.get() == 0:
-            cmd = [self.master.path_visualizer.get(), destination]
+            cmd = [self.master.path_to_visualizer.get(), destination]
 
         elif self.master.visualizer_mode.get() == 1:
-            cmd = ["open", "-a", self.master.path_visualizer.get(), destination]
+            cmd = ["open", "-a", self.master.path_to_visualizer.get(), destination]
             self.log_update("hit on mode 1")
 
         elif self.master.visualizer_mode.get() == 2:
-            self.log_update("Not implemented yet!")
-            return
+            return self.log_update("Not implemented yet!")
 
         self.log_update(" ".join(cmd))
         subprocess.call(cmd)
@@ -821,7 +816,7 @@ class MainWindow(tk.Frame):
 
     def get_scratch(self):
         if self.master.host.get() == "stallo":
-            return os.path.join(self.parent.current_settings["paths"]["scrastch_stallo"], self.user.get())
+            return os.path.join(self.parent.current_settings["paths"]["scratch_stallo"], self.user.get())
         elif self.master.host.get() == "fram":
             return self.parent.current_settings["paths"]["scratch_fram"]
         elif self.master.host.get() == "saga":
