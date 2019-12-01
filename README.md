@@ -2,7 +2,7 @@
 
 #### This application provides a simple graphical user interface to looking at your SLURM queue. 
 
-![QueueGui main window](./QueueGui.png)
+![QueueGui main window](QueueGui.png)
 
 ## Features:
 
