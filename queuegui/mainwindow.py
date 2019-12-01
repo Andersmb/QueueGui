@@ -271,6 +271,8 @@ class MainWindow(tk.Frame):
         self.txt.tag_configure("job_timeout", foreground="#FF0000")
         self.txt.tag_configure("job_cancelled", foreground="#e52de5")
         self.txt.tag_configure("about_page", font=self.parent.about_font)
+        self.txt.tag_configure("special_user", foreground="#FF0000")
+        self.txt.tag_configure("superspecial_user", foreground="#fdbf2c")
         self.txt.tag_raise(tk.SEL)
 
         # Bind keyboard shortcuts to the most important buttons
@@ -590,7 +592,92 @@ class MainWindow(tk.Frame):
         :param args: event from keyboard combination
         :return:
         """
-        self.log_update("Not implemented")
+        """
+        Count the number of running and pending CPUS for all users, and display
+        in a table.
+        :return:
+        """
+        cmd = "squeue -o '%u %C %t'"
+        stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+        q = stdout.readlines()
+
+        cpus_total = self.parent.cluster_data[self.master.host.get()]["number_of_cpus"]
+
+        # Get jobs in queue
+        jobs_all = [line.split() for line in q]
+        jobs_running = [job for job in jobs_all if job[-1] == "R"]
+        jobs_pending = [job for job in jobs_all if job[-1] == "PD"]
+
+        # Initialize list to contain the users from all jobs
+        users = sorted(set([job[0] for job in jobs_all]))
+
+        # Initialize a dict in which the sum of all CPUs will be accumulated
+        cpu_running = {user: 0 for user in users}
+        cpu_pending = {user: 0 for user in users}
+
+        # perform the sum for running cpus
+        for job in jobs_running:
+            for user in cpu_running.keys():
+                if user in job:
+                    cpu_running[user] += int(job[1])
+        # and for pending cpus
+        for job in jobs_pending:
+            for user in cpu_running.keys():
+                if user in job:
+                    cpu_pending[user] += int(job[1])
+
+        # Zip list of users, list of running cpus, and list of pending cpus.
+        # Then sort based on list of running cpus.
+        zipped = sorted(
+            zip(cpu_running.keys(), [c for user, c in cpu_running.items()], [c for user, c in cpu_pending.items()]),
+            key=lambda x: x[1], reverse=True)
+
+        # Unzip
+        user, cpu_running, cpu_pending = zip(*zipped)
+
+        # get ratio of running cpus to cluster's total to 4 digits
+        oftotal = [str(float(i) / cpus_total * 100)[:5] for i in cpu_running]
+
+        # Get the users to highlight
+        user_special = self.parent.cpu_usage_highlight_users.get().split()
+
+        # Now insert data
+        # In order to align the columns, we find the longes names in each column
+        maxlen = (max(len(x) for x in user),
+                  max(len(str(x)) for x in cpu_running),
+                  max(len(str(x)) for x in oftotal),
+                  max(len(str(x)) for x in cpu_pending))
+
+        self.txt.config(state=tk.NORMAL)
+        self.txt.delete(1.0, tk.END)
+        self.txt.insert(tk.END, "-"*(18 + maxlen[0] - 4 + maxlen[1] - 3 + maxlen[2] - 1) + "\n")
+        self.txt.insert(tk.END, f"User {' '*(maxlen[0] - 4)} Run {' '*(maxlen[1] - 3)} % {' '*(maxlen[2] - 1)} Pend\n")
+        self.txt.insert(tk.END, "-"*(18 + maxlen[0] - 4 + maxlen[1] - 3 + maxlen[2] - 1) + "\n")
+
+        for i, u in enumerate(user):
+            self.txt.insert(tk.END, "{} {} {} {} {} {} {}\n".format(u,
+                                                                    (maxlen[0] - len(user[i])) * " ",
+                                                                    cpu_running[i],
+                                                                    (maxlen[1] - len(str(cpu_running[i]))) * " ",
+                                                                    oftotal[i],
+                                                                    (maxlen[2] - len(oftotal[i])) * " ",
+                                                                    cpu_pending[i]))
+            if u in user_special:  # make special users red
+                self.txt.tag_add("special_user", "{}.0".format(i + 4), "{}.{}".format(i + 4, tk.END))
+                if u == user_special[0]:  # make first special user green
+                    self.txt.tag_add("superspecial_user", "{}.0".format(i + 4), "{}.{}".format(i + 4, tk.END))
+
+        self.txt.insert(tk.END, "-"*(18 + maxlen[0] - 4 + maxlen[1] - 3 + maxlen[2] - 1) + "\n")
+
+        # convert back to floats for the summation
+        oftotal = [float(t) for t in oftotal]
+        self.txt.insert(tk.END, "SUM: {} {} {} {} {} {}\n".format((maxlen[0] - 4) * " ",
+                                                                  str(sum(cpu_running))[:5],
+                                                                  (maxlen[1] - len(str(sum(cpu_running)))) * " ",
+                                                                  str(sum(oftotal))[:5],
+                                                                  (maxlen[2] - len(str(sum(oftotal)))) * " ",
+                                                                  str(sum(cpu_pending))[:5]))
+        self.txt.insert(tk.END, "-"*(18 + maxlen[0] - 4 + maxlen[1] - 3 + maxlen[2] - 1) + "\n")
 
     def locate_output_file(self, pid):
         """
