@@ -10,7 +10,8 @@
 - Should work on both MacOS, Windows, and Linux
 - Color coding of jobs based on current status
 - Filter content based on status or keywords
-- Securily kill single jobs, all jobs, or job ranges
+- Securely kill single jobs, all jobs, or job ranges
+- List the CPU usage on the cluster, so that you know who to blame!
 - Look at input and output files at the click of a button
 - Look at your job history in color code. You decide how far back you want to go.
 - Comes with output file parsers for Gaussian16, ORCA 4.1.2, and MRChem 2.0
