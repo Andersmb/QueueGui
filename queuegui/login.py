@@ -43,9 +43,6 @@ class Login(tk.Frame):
         self.entry_user.grid(row=0, column=1, sticky=tk.W)
         self.entry_pwd.grid(row=1, column=1, sticky=tk.W)
 
-        self.entry_user.insert(0, "ambr")
-        self.entry_pwd.insert(0, "Brosmetinden1!")
-
         # Bind the return key for easier login
         self.entry_pwd.bind("<Return>", self.authorize)
 
