@@ -132,7 +132,6 @@ class MrchemOut(object):
         orb_thrs = self.orbital_threshold()
 
         mo_residual, energies, updates = zip(*self.scf_energy())
-        energies_kcal = map(lambda x: 627.509*(x - energies[0]), energies)
         xs = range(len(energies))
 
         property_thresholds = [prop_thrs for _x in xs]
