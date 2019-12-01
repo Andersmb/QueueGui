@@ -72,7 +72,7 @@ class QueueGui(tk.Tk):
 
         # Define default settings
         self.default_settings = {
-            "background_color": "dark slate gray",
+            "background_color": "#e8b251",
             "job_history_length": 14,
             "check_for_updates": "Yes" if self.check_for_updates.get() else "No",
             "queue_monitor_update_frequency": 4000,
