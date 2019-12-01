@@ -55,9 +55,6 @@ class MainWindow(tk.Frame):
         self.monitor_selected_text()
         self.log_update(f"Welcome to {self.parent.name}!")
 
-        # Bind <Return> to master to easily getting the queue
-        self.parent.bind("<Return>", self.print_q)
-
     def place_widgets(self):
         # Configure columns and rows. Allow for resizing in appropriate directions
         self.grid(row=0, column=0, sticky="nsew")
@@ -203,10 +200,16 @@ class MainWindow(tk.Frame):
         self.entry_filter.bind("<Return>", self.filter_textbox)
 
         # Labels
-        tk.Label(self.topleft,
-                 text="Multi-purpose filter:",
-                 font=self.parent.main_font,
-                 bg=self.master.background_color.get()).grid(row=3, column=0, sticky="ew", pady=5, padx=5)
+        self.label_filter = tk.Label(self.topleft,
+                                     font=self.parent.main_font,
+                                     bg=self.master.background_color.get())
+        self.label_filter["text"] = "Filter in ALL mode:" if self.parent.filter_mode.get() == 0 else "Filter in ANY mode:"
+        self.label_filter.grid(row=3, column=0, sticky="ew", pady=5, padx=5)
+        self.label_filter.bind("<Button-1>", self.update_filter_mode)
+
+        self.filter_mode_gen = helpers.modulo_generator(length=1500, mod=2)
+        next(self.filter_mode_gen)  # Get rid of first element
+
         self.label_selected_text = tk.Label(self.topleft,
                                             justify=tk.LEFT,
                                             text="<Selected PID goes here>",
@@ -294,6 +297,10 @@ class MainWindow(tk.Frame):
         """
         self.ssh_client.close()
         self.parent.show_login()
+
+    def update_filter_mode(self, *args):
+        self.parent.filter_mode.set(next(self.filter_mode_gen))
+        self.label_filter["text"] = "Filter in ALL mode:" if self.parent.filter_mode.get() == 0 else "Filter in ANY mode:"
 
     def monitor_selected_text(self):
         """
@@ -388,7 +395,7 @@ class MainWindow(tk.Frame):
         if self.do_queue_monitoring.get():
             self.print_q()
 
-        self.label_monitor_q["text"] = "Running: {}\nPending: {}".format(running, pending)
+        self.label_monitor_q["text"] = f"Running: {running}\nPending: {pending}"
         self.master.after(self.parent.queue_monitor_update_frequency.get(), self.monitor_q)
 
     def print_q(self, *args):
@@ -874,16 +881,20 @@ class MainWindow(tk.Frame):
     def filter_textbox(self, *args):
         self.jobhisfilter.set(self.entry_filter.get())
         if self.jobhisfilter.get().strip() == "":
-            self.log_update("The filter is empty")
-            return
+            return self.log_update("The filter is empty")
 
         # Collect whatever is currently in the textbox, and loop over it to filter
         current = self.txt.get(1.0, tk.END).splitlines()
-        new = []
-        for line in current:
-            for f in self.jobhisfilter.get().strip().split():
-                if f in line:
-                    new.append(line)
+        _filter = self.entry_filter.get().split()
+
+        # Filter based on the current filter mode
+        # This can be set by the user by clicking on the
+        # filter label in MainWindow
+        if self.parent.filter_mode.get() == 0:
+            new = [line for line in current if all([f in line for f in _filter])]
+        else:
+            new = [line for line in current if any([f in line for f in _filter])]
+
         self.txt.config(state=tk.NORMAL)
         self.txt.delete(1.0, tk.END)
 

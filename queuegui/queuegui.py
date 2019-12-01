@@ -32,6 +32,8 @@ class QueueGui(tk.Tk):
         self.host = tk.StringVar()  # Coupled to OptionMenu in Login
         self.visualizer_mode = tk.IntVar()
         self.visualizer_mode.set(0)
+        self.filter_mode = tk.IntVar()
+        self.filter_mode.set(0)
         self.check_for_updates = tk.BooleanVar()
         self.check_for_updates.set(1)
         self.remote_version_file = "https://raw.githubusercontent.com/Andersmb/QueueGui3/master/__VERSION__"
@@ -54,6 +56,7 @@ class QueueGui(tk.Tk):
         self.background_color = tk.StringVar()
         self.job_history_length = tk.IntVar()
         self.queue_monitor_update_frequency = tk.IntVar()
+        self.cpu_usage_highlight_users = tk.StringVar()
         self.fontsize_main = tk.IntVar()
         self.fontsize_q = tk.IntVar()
         self.fontsize_log = tk.IntVar()
@@ -68,7 +71,6 @@ class QueueGui(tk.Tk):
         self.path_to_notes = tk.StringVar()
         self.extensions_inputfiles = tk.StringVar()
         self.extensions_outputfiles = tk.StringVar()
-        self.cpu_usage_highlight_users = tk.StringVar()
 
         # Define default settings
         self.default_settings = {
