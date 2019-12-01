@@ -2,7 +2,7 @@
 
 #### This application provides a simple graphical user interface to looking at your SLURM queue. 
 
-![GitHub Logo](QueueGui.png)
+![QueueGui main window](./QueueGui.png)
 
 ## Features:
 
