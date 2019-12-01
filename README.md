@@ -2,9 +2,9 @@
 
 #### This application provides a simple graphical user interface to looking at your SLURM queue. 
 
-<img src="/Users/Anders/Desktop/QueueGui3.png" alt="QueueGui3" style="zoom:50%;" />
+![GitHub Logo](QueueGui.png)
 
-#### Features:
+## Features:
 
 - Secure log-in to remote cluster by SSH
 - Should work on both MacOS, Windows, and Linux
@@ -25,16 +25,16 @@
 - Easily convert XYZ files between Angström and Bohr
 - Customize by setting colors and fonts!
 
-#### Installation
+## Installation
 
 1. Download the git repository to your location of choice.
 
 2. In order to set your own preferences, QueueGui expects a file called `settings.json` to be located in `~/.QueueGui`. You need to create this file (it can be empty). On MacOS you can run in the terminal
 
-```bash
-mkdir $HOME/.QueueGui
-touch $HOME/.QueueGui/settings.json
-```
+    ```bash
+    mkdir $HOME/.QueueGui
+    touch $HOME/.QueueGui/settings.json
+    ```
 
 3. You will probably need to install some dependencies. No automatic way of doing this exists at this time, so you should just try to run the application and look at the errors you get. Then use `pip`to install the latest versions. 
 
@@ -44,7 +44,7 @@ touch $HOME/.QueueGui/settings.json
    python3 queuegui.py
    ```
 
-#### Requirements
+## Requirements
 
 - Python3 (developed with version 3.8, but other 3.x versions are also likely to work)
 
@@ -62,6 +62,6 @@ touch $HOME/.QueueGui/settings.json
 
   
 
-#### User Manual
+## User Manual
 
 To be continued!
