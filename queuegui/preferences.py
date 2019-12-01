@@ -188,10 +188,10 @@ class Preferences(tk.Toplevel):
         self.master.current_settings["extensions"]["input"] = self.entry_inputfile_ext.get().strip()
         self.master.current_settings["extensions"]["output"] = self.entry_outputfile_ext.get().strip()
 
-        # Set new settings to system variables, update fonts, and re-initialize MainWindow
+        # Update widgets
         self.master.set_system_variables()
         self.master.set_fonts()
-        self.parent.__init__(self.master)
+        self.update_all_widgets()
 
         # Write current settings to file if not in preview mode
         if not self.preview.get():
@@ -211,9 +211,24 @@ class Preferences(tk.Toplevel):
             self.master.current_settings = deepcopy(self.master.default_settings)
             self.master.set_system_variables()
             self.master.set_fonts()
-            self.parent.__init__(self.master)
+            self.update_all_widgets()
 
+            # Write default settings to file
             self.master.dump_settings()
+            self.parent.log_update("Default settings written to file!")
+
+    def update_all_widgets(self):
+        """
+        Destroy all widgets and place new widgets
+        :return:
+        """
+        # We must destroy the current grids in order to remove all widgets
+        for grid in [self.parent.topleft, self.parent.topright, self.parent.mid, self.parent.bot]:
+            grid.destroy()
+
+        # And finally we place the new widgets, and print the queue
+        self.parent.place_widgets()
+        self.parent.print_q()
 
     def colorpicker(self):
         ColorPicker(self)
