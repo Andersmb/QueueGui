@@ -740,7 +740,7 @@ class MainWindow(tk.Frame):
             inputfile = os.path.join(workdir, jobname+ext)
             try:
                 self.sftp_client.stat(inputfile)
-                return helpers.purify_path(inputfile)
+                return helpers.remote_join(inputfile)
             except:
                 continue
         self.log_update("Input file not found. ErrorCode_juq81")
@@ -823,7 +823,7 @@ class MainWindow(tk.Frame):
 
     def get_scratch(self):
         if self.master.host.get() == "stallo":
-            return os.path.join(self.parent.current_settings["paths"]["scratch_stallo"], self.user.get())
+            return helpers.remote_join(self.parent.current_settings["paths"]["scratch_stallo"], self.user.get())
         elif self.master.host.get() == "fram":
             return self.parent.current_settings["paths"]["scratch_fram"]
         elif self.master.host.get() == "saga":
