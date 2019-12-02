@@ -214,7 +214,7 @@ class QueueGui(tk.Tk):
 
         r = requests.get(self.remote_version_file)
         if r.status_code == requests.codes.ok:
-            remote_version = r.content
+            remote_version = r.content.decode("ascii").strip()
 
             if local_version != remote_version:
                 msg = f"""
