@@ -2,7 +2,7 @@
 
 #### This application provides a simple graphical user interface to looking at your SLURM queue. 
 
-![Main window](QueueGui3.png)
+![Main window](img/mainwindow.png)
 
 ## Features:
 
@@ -81,7 +81,6 @@ should be displayed in the main window
 - Check CPU usage
 - The filter functionalities
 
-
 ### Job dependent commands
 Below is a list of the job dependent commands. All these commands take the job PID as input. Just select the PID
 with the mouse, either by double-clicking on the PID or by clicking-and-dragging over the PID. If done correctly,
@@ -106,3 +105,26 @@ the selected PID should be visible in a text label in the main window.
     - .com -> .xyz
     - Bohr -> Angström
     - Angström -> Bohr
+    
+### Setting up your preferences
+The Preferences window looks like this:
+
+![Preferences window](img/preferences.png)
+
+In order to save your settings for the next time you open QueueGui, you need to create a settings file
+(as described under Installation).
+In order to open input and output files, you also need to specify the path to your scratch area.
+These paths for Stallo, Fram, and Saga can be set by opening the Preferences window: press `ctrl+p` or navigate to
+`System -> Preferences` in the top menu bar.
+
+QueueGui assumes that the scratch directory for a given job **ends with the PID**. This is the default on Fram/Saga, 
+but may not be the case on Stallo, depending on how you submit your jobs. Also modify the extensions you use
+for your input and output files in the preferences in a space-separated list of extensions (including the ".").
+Click "Apply" in order to write your new settings to file.
+
+Use FontPicker to get a preview of all available fonts. Click on a font, and then decide which part of QueueGui
+you want that font to be applied to.
+Use ColorPicker to get a color map, and click on a color to update the background color of the application.
+
+If the "Preview" button is checked, then the settings file is not overwritten when you click "Apply". It is a way to
+test your settings without changing the settings file.
