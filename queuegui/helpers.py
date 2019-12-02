@@ -45,3 +45,20 @@ def splitjoin(s, jd=None, sd=None):
     else:
         return jd.join(s.split(sd))
 
+
+def remote_join(*args):
+    """
+    Join strings by a forward-slash. Useful when a MS Windows user wants to open remote files
+    :param args: list of strings to join
+    :return:
+    """
+    return "/".join(args)
+
+
+def purify_path(path):
+    """
+    Split a path by forward-slashes, and then os.path.join together again to get correct sep for the OS
+    :param path: string
+    :return:
+    """
+    return os.path.join(path.split("/"))
