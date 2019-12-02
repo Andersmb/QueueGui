@@ -1,6 +1,7 @@
 import unittest
 import sys
-sys.path.append("/Users/Anders/Documents/github/QueueGui3")
+import os
+sys.path.append(os.path.join(os.getcwd(), "../queuegui"))
 
 from output_parsers.mrchem import MrchemOut
 
