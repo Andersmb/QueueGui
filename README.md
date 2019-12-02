@@ -67,8 +67,9 @@
 
 ## User Manual
 
-The features can be diveded into two categories: 1) job-dependent commands that are executed on the remote cluster; 
-and 2) job specific commands that require the PID of one of your running or pending jobs. Job independent commands should 
+The features can be diveded into two categories: 1) job independent commands that require no input, 
+and 2) job dependent commands that require the PID of one of your running or pending jobs. 
+Job independent commands should 
 work out-of-the-box when you download QueueGui, but job dependent commands may need some tweeking in 
 the Preferences window (more on that below).
 
