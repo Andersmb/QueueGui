@@ -7,7 +7,7 @@
 ## Features:
 
 - Secure log-in to remote cluster by SSH
-- Should work on both MacOS, Windows, and Linux
+- Should work on MacOS, Windows, and Linux
 - Color coding of jobs based on current status
 - Filter content based on status or keywords
 - Securely kill single jobs, all jobs, or job ranges
@@ -23,6 +23,8 @@
   - Displace coordinates as defined by a normal mode (usually imaginary)
   - Extract normal mode information from ORCA .hess file for easy visualization in Molden
 - Easily convert between .xyz and Gaussian input formats
+- Keyboard shortcuts
+- Notification at startup when new version is available on Github
 - Easily convert XYZ files between Angström and Bohr
 - Customize by setting colors and fonts!
 
@@ -65,4 +67,41 @@
 
 ## User Manual
 
-To be continued!
+The features can be diveded into two categories: 1) job-dependent commands that are executed on the remote cluster; 
+and 2) job specific commands that require the PID of one of your running or pending jobs. Job independent commands should 
+work out-of-the-box when you download QueueGui, but job dependent commands may need some tweeking in 
+the Preferences window (more on that below).
+
+### Job independent commands
+Below is a list of the job independent commands. Just click on their respective buttons, and the output
+should be displayed in the main window
+- Get queue
+- Job History
+- Check CPU usage
+- The filter functionalities
+
+
+### Job dependent commands
+Below is a list of the job dependent commands. All these commands take the job PID as input. Just select the PID
+with the mouse, either by double-clicking on the PID or by clicking-and-dragging over the PID. If done correctly,
+the selected PID should be visible in a text label in the main window.
+- Output file
+- Input file
+- Job script
+- Job info
+- Kill Selected Job
+- Kill All Jobs
+- Kill job range
+- Plot SCF convergence
+- Plot geometry convergence
+- Open output in visualizer
+- Functions in the ToolBox:
+    - Get optimized geometry
+    - Get ORCA normal modes
+    - Apply normal mode
+    - Random displacements
+- Functions in ConvertMe:
+    - .xyz -> .com
+    - .com -> .xyz
+    - Bohr -> Angström
+    - Angström -> Bohr
