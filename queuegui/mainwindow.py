@@ -718,7 +718,7 @@ class MainWindow(tk.Frame):
             outputfile = stdout.read().decode('ascii').split()
             try:
                 self.sftp_client.stat(outputfile[0])
-                return outputfile[0]
+                return helpers.purify_path(outputfile[0])
             except:
                 continue
         else:
@@ -740,7 +740,7 @@ class MainWindow(tk.Frame):
             inputfile = os.path.join(workdir, jobname+ext)
             try:
                 self.sftp_client.stat(inputfile)
-                return inputfile
+                return helpers.purify_path(inputfile)
             except:
                 continue
         self.log_update("Input file not found. ErrorCode_juq81")
@@ -858,7 +858,7 @@ class MainWindow(tk.Frame):
         slurmscript_extensions = [".job", ".launch"]
         for ext in slurmscript_extensions:
             try:
-                with self.sftp_client.open(os.path.join(workdir, jobname+ext)) as f:
+                with self.sftp_client.open(helpers.remote_join(workdir, jobname+ext)) as f:
                     content = f.read()
                     self.txt.configure(state=tk.NORMAL)
                     self.txt.delete(1.0, tk.END)
