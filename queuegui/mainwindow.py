@@ -350,9 +350,9 @@ class MainWindow(tk.Frame):
             PhD Candidate at UiT The Arctic University of Norway
             anders.m.brakestad@uit.no
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    Please report bugs here: https://github.com/Andersmb/QueueGui3/issues
+    Please report bugs here: https://github.com/Andersmb/QueueGui/issues
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    User Manual: https://github.com/Andersmb/QueueGui3
+    User Manual: https://github.com/Andersmb/QueueGui
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Keyboard shortcuts:
     Ctrl-q      Get queue

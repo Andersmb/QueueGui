@@ -36,7 +36,7 @@ class QueueGui(tk.Tk):
         self.filter_mode.set(0)
         self.check_for_updates = tk.BooleanVar()
         self.check_for_updates.set(1)
-        self.remote_version_file = "https://raw.githubusercontent.com/Andersmb/QueueGui3/master/__VERSION__"
+        self.remote_version_file = "https://raw.githubusercontent.com/Andersmb/QueueGui/master/__VERSION__"
         self.cluster_data = {
             "stallo": {
                 "hostname": "stallo.uit.no",
@@ -225,7 +225,7 @@ class QueueGui(tk.Tk):
 
                 Download the files on Github:
 
-                https://github.com/Andersmb/QueueGui3
+                https://github.com/Andersmb/QueueGui
 
                 (Psst! You can turn off update notifications in the preferences)
                 """
