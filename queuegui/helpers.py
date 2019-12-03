@@ -1,3 +1,6 @@
+import os
+
+
 def modulo_generator(length=3000, mod=3):
     """
     Return a generator yielding modulo values
@@ -61,4 +64,6 @@ def purify_path(path):
     :param path: string
     :return:
     """
-    return os.path.join(path.split("/"))
+    first = path.split("/")[1]
+    rest = path.split("/")[2:]
+    return os.path.join("/"+first, *rest)
