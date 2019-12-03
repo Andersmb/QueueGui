@@ -1,4 +1,4 @@
-
+import helpers
 
 class OrcaOut(object):
     def __init__(self, filename):
@@ -13,13 +13,13 @@ class OrcaOut(object):
 
     def geometry_trajectory(self):
         """Return list of all geometry steps from a geometry optimization. The last step is the optimized geometry"""
-        output = self.content
         traj = []
-        for i, line in enumerate(output):
+        for i, line in enumerate(self.content):
             if line.strip().startswith("CARTESIAN COORDINATES (ANGSTROEM)"):
-                traj.append(output[i+2:i+self.no_atoms()+2])
+                traj.append(self.content[i+2:i+self.no_atoms()+2])
         # Strip all white space and newilne characters in traj
-        return [[' '.join(atom.split() for atom in geom)] for geom in traj]
+
+        return [[helpers.splitjoin(atom) for atom in geom] for geom in traj]
 
     def source(self):
         """Return the file content as a string."""
