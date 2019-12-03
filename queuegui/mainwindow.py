@@ -719,7 +719,7 @@ class MainWindow(tk.Frame):
             try:
                 self.sftp_client.stat(outputfile[0])
                 return helpers.purify_path(outputfile[0])
-            except:
+            except IOError:
                 continue
         else:
             self.log_update(f"No output file was found using these extensions: {', '.join(outputfile_ext)}")
