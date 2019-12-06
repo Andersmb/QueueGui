@@ -249,6 +249,11 @@ if __name__ == "__main__":
     app = QueueGui()
     app.title(app.name)
     app.resizable(False, False)
+
+    app.lift()
+    app.attributes('-topmost', True)
+    app.after_idle(app.attributes, '-topmost', False)
+
     app.mainloop()
 
     print(f"Removing temporary directory:\n{app.tmp}")
