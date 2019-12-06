@@ -315,20 +315,30 @@ class ToolBox(tk.Toplevel):
         files = self.thefile.get().split()
 
         for f in files:
-            # Ask user for the value of index and scale
-            index = simpledialog.askinteger("Select normal mode", "Which normal mode do you want?")
-            scale = simpledialog.askfloat("Select scale factor", "Select a scale factor")
-
             hess = OrcaHess(f)
-            mode = hess.normal_modes()[index]
             geom = hess.geometry()
             output = hess.filename.split(".")[0] + "_displaced.xyz"
+
+            # Open message box for displaying frequencies
+            show_freq = DisplayFrequencies(self, f)
+
+            # Ask user for the value of index and scale
+            index = simpledialog.askinteger("Select normal mode", "Which normal mode do you want?",
+                                            initialvalue=6)
+
+            # Destroy message box
+            show_freq.destroy()
+
+            scale = simpledialog.askfloat("Select scale factor", "Select a scale factor",
+                                          initialvalue=0.05)
+            mode = hess.normal_modes()[index]
 
             geom_displaced = []
             labels = [atom.split()[0] for atom in geom]
             for i, atom in enumerate(geom):
-                c = map(float, atom.split()[1:])
-                v = map(float, mode[i].split())
+                c = [float(el) for el in atom.split()[1:]]
+                v = mode[i]
+
                 c_new = [labels[i],
                          self.parent.master.AU2ANG * (c[0] + scale * v[0]),
                          self.parent.master.AU2ANG * (c[1] + scale * v[1]),
@@ -344,3 +354,26 @@ class ToolBox(tk.Toplevel):
 
             self.log_update(f"Coordinates displaced in {output}")
 
+
+class DisplayFrequencies(tk.Toplevel):
+    def __init__(self, parent, hessfile):
+        tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.frequencies = OrcaHess(hessfile).frequencies()
+        self.indeces = [i for i in range(len(self.frequencies))]
+        self.frequencies.insert(0, "Frequency")
+        self.indeces.insert(0, "Index")
+        self.title("Vibrational Frequencies")
+
+        self.left = tk.Frame(self)
+        self.right = tk.Frame(self)
+        self.left.grid(row=0, column=0)
+        self.right.grid(row=0, column=1)
+        self.bottom = tk.Frame(self)
+        self.bottom.grid(row=1, column=0)
+
+        indeces = "\n".join(map(str, self.indeces))
+        freqs = "\n".join(map(str, self.frequencies))
+
+        tk.Label(self.left, text=indeces).grid(row=0, column=0)
+        tk.Label(self.right, text=freqs).grid(row=0, column=1)
