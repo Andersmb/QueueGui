@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import colorchooser
 from tkinter import font
 from copy import deepcopy
 
@@ -157,7 +158,7 @@ class Preferences(tk.Toplevel):
         tk.Checkbutton(self.frame, text="Preview", variable=self.preview).grid(row=14, column=1, sticky=tk.W)
 
         # Buttons
-        tk.Button(self.frame, text="ColorPicker", command=self.colorpicker).grid(row=15, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="ColorPicker", command=self.colorpicker2).grid(row=15, column=0, sticky=tk.W)
         tk.Button(self.frame, text="FontPicker", command=self.fontpicker).grid(row=16, column=0, sticky=tk.W)
         tk.Button(self.frame, text="Restore defaults", command=self.restore_defaults).grid(row=17, column=0, sticky=tk.W)
         tk.Button(self.frame, text="Exit", command=self.destroy, fg="red", bg="black").grid(row=18, column=0, sticky=tk.W)
@@ -231,7 +232,33 @@ class Preferences(tk.Toplevel):
         self.parent.print_q()
 
     def colorpicker(self):
+        """
+        Deprecated. A better solution actually came with tkinter.
+        :return:
+        """
         ColorPicker(self)
 
     def fontpicker(self):
         FontPicker(self)
+
+    def colorpicker2(self):
+        """
+        Use colorchooser from OS. Reopen the chooser in order to make it
+        easier to preview colors. Note that every time a color is applied,
+        the settings are written to file => There is therefore no real preview
+        functionality with this approach.
+
+        However, the choose looks sooo much better!
+        :return:
+        """
+        rgb_color, hex_color = colorchooser.askcolor(parent=self,
+                                                     initialcolor=(255, 0, 0))
+
+        self.entry_background_color.delete(0, tk.END)
+        self.entry_background_color.insert(0, hex_color)
+
+        self.preview.set(False)
+        self.get_new_settings()
+
+        # Re-open the chooser
+        self.after(500, self.colorpicker2)
