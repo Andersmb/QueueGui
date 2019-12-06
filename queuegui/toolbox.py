@@ -262,120 +262,38 @@ class ToolBox(tk.Toplevel):
 
     def get_normalmodes_orca(self):
         """
-        Extracts the normal modes from an ORCA Hessian file (.hess), and writes them
-        to a new file with name <jobname_normalmodes.molden>. It works only for
-        analytical frequency jobs, since otherwise the normalmodes are scattered
-        acrodd multiple Hessian files.
 
-        TODO: Rewrite with methods from the OrcaHess class
+        :return:
         """
-
         self.thefile.set(self.entry.get())
         files = self.thefile.get().split()
-        if len(files) > 1:
-            self.log_update("Entering batch mode")
 
-        for hess in files:
-            # get the jobname (without extension). Assumes only one "." is used in the
-            # filename
-            jobname = hess.split(".")[0]
-            with open(hess, "r") as infile:
-                inlines = infile.readlines()
+        for f in files:
+            hess = OrcaHess(f)
 
-            # Initialize some variables
-            no_of_freq = None
-            freqs = []
-            modes = []
-            geom = []
-            # Extract the number of frequencies and all frequencies
-            for i, line in enumerate(inlines):
+            with open(hess.filename.replace(".hess", "_normalmodes.molden"), "w") as f:
+                f.write("[MOLDEN FORMAT]\n")
+                f.write("[N_FREQ]\n")
+                f.write(f"{hess.no_freq()}\n")
+                f.write("[FREQ]\n")
 
-                # Now get the number of frequencies
-                if line.startswith("$vibrational_frequencies"):
-                    no_of_freq = int(inlines[i + 1])
-                    for j in range(no_of_freq):
-                        freqs.append(float(inlines[i + j + 2].split()[1]))
+                for freq in hess.frequencies():
+                    f.write(str(freq) + "\n")
 
-                # Now get all normal modes
-                if line.startswith("$normal_modes"):
-                    # index where the normal mode data starts
-                    start = i + 3
-                    # the number of columns containing normal modes
-                    cols = len(inlines[start].split()) - 1
-                    # the number of times the columns are repeated
-                    rows = int(float(no_of_freq) / float(cols)) + 1
-                    # the number of columns in the last "line" of normal mode data
-                    rest = no_of_freq - (cols * (rows - 1))
+                f.write("[NATOM]\n")
+                f.write(str(hess.no_atoms()) + "\n")
+                f.write("[FR-COORD]\n")
 
-                    # minus 1 to not include the "rest" row
-                    for r in range(rows - 1):
-                        # define each line where the data starts
-                        # i: start of normal mode section, 3: to get to where the data
-                        # starts, r*(nfreq+1): move down in r multiples of nfreq (must add
-                        # one due to the extra label line inbetween each normal mode)
-                        start = i + 3 + r * (no_of_freq + 1)
-                        for c in range(cols):
-                            for f in range(no_of_freq):
-                                modes.append(float(inlines[start + f].split()[c + 1]))
+                for atom in hess.geometry():
+                    f.write(atom + "\n")
 
-                    # Now pick up the "rest" normal mode
-                    # move down to the last "line" of normal mode data
-                    start = i + 3 + (rows - 1) * (no_of_freq + 1)
-                    for r in range(rest):
-                        for f in range(no_of_freq):
-                            modes.append(float(inlines[start + f].split()[r + 1]))
+                f.write("[FR-NORM-COORD]\n")
 
-                    # Now split the normal mode data into their x, y, and z components, as
-                    # this will make it easier to write to file
-                    mode_x = modes[::3]
-                    mode_y = modes[1::3]
-                    mode_z = modes[2::3]
-
-                # Now get the geometry
-                if line.startswith("$atoms"):
-                    no_atoms = int(inlines[i + 1])
-                    start = i + 2
-                    for atom in range(no_atoms):
-                        for k in range(5):
-                            # we do not want the "mass" column in the table, so we exclude
-                            # index 1 from the loop
-                            if k != 1:
-                                geom.append(inlines[start + atom].split()[k])
-            # Now format geom into something which is easier to write (list of lists)
-            coord = [[] for i in range(no_atoms)]
-            for i in range(no_atoms):
-                coord[i] = geom[i * 4:i * 4 + 4]
-
-            # Define the output name as jobname_normalmodes.molden
-            output = jobname + "_normalmodes.molden"
-            # Now we write all of our data to file
-            with open(output, "w") as o:
-                o.write("[MOLDEN FORMAT]\n")
-                o.write("[N_FREQ]\n")
-                o.write(f"{no_of_freq}\n")
-                o.write("[FREQ]\n")
-
-                for f in freqs:
-                    o.write(str(f) + "\n")
-
-                o.write("[NATOM]\n")
-                o.write(str(no_atoms) + "\n")
-                o.write("[FR-COORD]\n")
-
-                for c in coord:
-                    o.write("\t".join(c) + "\n")
-
-                o.write("[FR-NORM-COORD]\n")
-
-                for m in range(len(modes)):
-                    if float(m) % no_of_freq == 0:
-                        o.write(f"vibration {str(m / no_of_freq + 1)}\n")
-
-                    if float(m) % 3 == 0:
-                        o.write(
-                            "".join(str(mode_x[m / 3]) + " " + str(mode_y[m / 3]) + " " + str(mode_z[m / 3])) + "\n")
-                o.close()
-            self.log_update(f"Normal modes written to {jobname}_normalmodes.molden")
+                for idx, mode in enumerate(hess.normal_modes()):
+                    f.write(f"vibration {idx+1}\n")
+                    for atom in mode:
+                        f.write(' '.join(map(str, atom)) + "\n")
+            self.log_update(f"Extracted normal modes to {hess.filename.replace('.hess', '_normalmodes.molden')}")
 
     def apply_normal_mode(self):
         """
