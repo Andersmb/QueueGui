@@ -38,6 +38,7 @@ class Login(tk.Frame):
 
         # Text entries
         self.entry_user = tk.Entry(self)
+        self.entry_user.focus_set()
         self.entry_pwd = tk.Entry(self, show="*")
 
         self.entry_user.grid(row=0, column=1, sticky=tk.W)
