@@ -269,16 +269,15 @@ class OrcaHess(object):
             self.content = self.source.splitlines()
 
     def no_freq(self):
-        content = self.content
-        for i, line in enumerate(content):
+        for i, line in enumerate(self.content):
             if line.strip().startswith("$vibrational_frequencies"):
-                return int(content[i+1].strip())
+                return int(self.content[i+1].strip())
 
     def normal_modes(self):
         no_freq = self.no_freq()
 
         freqs, rawmodes = [], []
-        modes = [[] for _i in range(no_freq)]
+        modes = [[] for _ in range(no_freq)]
 
         for i, line in enumerate(self.content):
             # Get the frequencies
@@ -323,24 +322,29 @@ class OrcaHess(object):
                 mode_z = rawmodes[2::3]
 
         # Rearrange the raw modes into a prettier format in modes
-        no_atoms = len(self.geometry())
         for m in range(len(rawmodes)):
             if m % 3 == 0:
-                modes[m/3/no_atoms].append(str(mode_x[m/3]) + " " + str(mode_y[m/3]) + " " + str(mode_z[m/3]))
+                main_index = int(m / (3 * self.no_atoms()))
+                sub_index = int(m / 3)
+                modes[main_index].append(str(mode_x[sub_index]) + " " + str(mode_y[sub_index]) + " " + str(mode_z[sub_index]))
 
-        return modes
+        # Return a list of lists of floats
+        return [[[float(el)for el in atom.split()] for atom in mode] for mode in modes]
 
     def geometry(self):
-        content = self.content
         geom = []
-        for i, line in enumerate(content):
+        for i, line in enumerate(self.content):
             if line.strip().startswith("$atoms"):
-                no_atoms = int(self.content[i+1])
-                for atom in range(no_atoms):
-                    geom.append(content[i+2+atom])
+                for atom in range(self.no_atoms()):
+                    geom.append(self.content[i+2+atom])
 
-        geom = [map(lambda x: x.strip(), atom.split()) for atom in geom]
+        geom = [[el.strip() for el in atom.split()] for atom in geom]
         return [atom[0] + " " + " ".join(atom[2:]) for atom in geom]
+
+    def no_atoms(self):
+        for i, line in enumerate(self.content):
+            if line.strip().startswith("$atoms"):
+                return int(self.content[i+1])
 
     def frequencies(self):
         content = self.content
