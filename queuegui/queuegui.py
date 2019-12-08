@@ -91,8 +91,7 @@ class QueueGui(tk.Tk):
                 "scratch_fram": "/cluster/work/jobs",
                 "scratch_saga": "/cluster/work/jobs",
                 "visualizer": "",
-                "notes": os.path.join(os.path.expanduser("~"), ".QueueGui", "notes.txt"),
-                "settings": os.path.join(os.path.expanduser("~"), ".QueueGui", "settings.json")
+                "settings": os.path.join(os.path.expanduser("~"), self.name, "settings.json")
             },
             "extensions": {
                 "input": ".inp .com",
@@ -119,9 +118,6 @@ class QueueGui(tk.Tk):
         self.set_system_variables()
         self.set_fonts()
 
-        # Check for settings file
-        self.is_settings_file()
-
     def show_login(self):
         self.login_window.grid(row=0, column=0)
         if not self.startup:
@@ -142,25 +138,23 @@ class QueueGui(tk.Tk):
             with open(self.default_settings["paths"]["settings"]) as f:
                 return json.load(f)
         except IOError:
-            print("Warning: No settings file found. Using defaults.")
-            return deepcopy(self.default_settings)
-        except json.decoder.JSONDecodeError:
-            print("Empty settings file found. Using defaults.")
+            if not os.path.isdir(os.path.dirname(self.default_settings["paths"]["settings"])):
+                msg = f"""QueueGui's home directory does not exist. 
+                            Do you want to create it? \n {os.path.dirname(self.default_settings["paths"]["settings"])}"""
+                if messagebox.askyesno(self.name, msg):
+                    # Make dir and parent dirs and create empty settings file
+                    os.makedirs(os.path.dirname(self.default_settings["paths"]["settings"]))
+                    open(self.default_settings["paths"]["settings"], "w").close()
+                    return deepcopy(self.default_settings)
+                else:
+                    return deepcopy(self.default_settings)
+
+        except json.decoder.JSONDecodeError:  # Most likely an empty settings file
             return deepcopy((self.default_settings))
 
     def dump_settings(self):
         with open(self.path_to_settings_file.get(), "w") as f:
             json.dump(self.current_settings, f, indent=4)
-
-    def is_settings_file(self):
-        if not os.path.isfile(self.path_to_settings_file.get()):
-            msg = f"""
-                  No settings file found. You must create the following empty file in order to
-                  be able to set your own settings:
-
-            {     self.path_to_settings_file.get()}
-            """
-            messagebox.showinfo(self.name, msg)
 
     def set_system_variables(self):
         """
@@ -190,7 +184,6 @@ class QueueGui(tk.Tk):
         self.path_scratch_saga.set(self.current_settings["paths"]["scratch_saga"])
         self.path_to_visualizer.set(self.current_settings["paths"]["visualizer"])
         self.path_to_settings_file.set(self.current_settings["paths"]["settings"])
-        self.path_to_notes.set(self.current_settings["paths"]["notes"])
 
         self.extensions_inputfiles.set(self.current_settings["extensions"]["input"])
         self.extensions_outputfiles.set(self.current_settings["extensions"]["output"])
