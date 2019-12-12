@@ -19,6 +19,7 @@ class QueueGui(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.name = "QueueGui3"
+        self.do_debug = tk.BooleanVar()
 
         # Define constants for conversions
         self.AU2ANG = 0.529177249
@@ -80,6 +81,7 @@ class QueueGui(tk.Tk):
             "queue_monitor_update_frequency": 4000,
             "cpu_usage_highlight_users": "",
             "visualizer_mode": self.visualizer_mode.get(),
+            "do_debug": False,
 
             "fonts": {
                 "main": {"size": 13, "family": "Chalkboard SE"},
@@ -166,6 +168,7 @@ class QueueGui(tk.Tk):
         self.queue_monitor_update_frequency.set(self.current_settings["queue_monitor_update_frequency"])
         self.cpu_usage_highlight_users.set(self.current_settings["cpu_usage_highlight_users"])
         self.visualizer_mode.set(self.current_settings["visualizer_mode"])
+        self.do_debug.set(self.current_settings["do_debug"])
 
         if self.current_settings["check_for_updates"] == "Yes":
             self.check_for_updates.set(True)
@@ -235,6 +238,9 @@ class QueueGui(tk.Tk):
         self.log_font = font.Font(family=self.fontfam_log.get(), size=self.fontsize_log.get())
         self.about_font = font.Font(family="Arial", size=16)
 
+    def debug(self, s):
+        if self.do_debug.get():
+            print(s)
 
 
 # Run application

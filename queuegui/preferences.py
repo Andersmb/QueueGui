@@ -157,11 +157,16 @@ class Preferences(tk.Toplevel):
         tk.Button(self.frame, text="Apply", command=self.get_new_settings, fg="green").grid(row=14, column=0, sticky=tk.W)
         tk.Checkbutton(self.frame, text="Preview", variable=self.preview).grid(row=14, column=1, sticky=tk.W)
 
+        # ROW 15
+        tk.Checkbutton(self.frame,
+                       text="Run QueueGui in debug mode",
+                       variable=self.master.do_debug).grid(row=15, column=0, sticky=tk.W)
+
         # Buttons
-        tk.Button(self.frame, text="ColorPicker", command=self.colorpicker2).grid(row=15, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="FontPicker", command=self.fontpicker).grid(row=16, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="Restore defaults", command=self.restore_defaults).grid(row=17, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="Exit", command=self.destroy, fg="red", bg="black").grid(row=18, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="ColorPicker", command=self.colorpicker2).grid(row=16, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="FontPicker", command=self.fontpicker).grid(row=17, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="Restore defaults", command=self.restore_defaults).grid(row=18, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="Exit", command=self.destroy, fg="red", bg="black").grid(row=19, column=0, sticky=tk.W)
 
     def get_new_settings(self):
         """
@@ -173,6 +178,7 @@ class Preferences(tk.Toplevel):
         self.master.current_settings["cpu_usage_highlight_users"] = self.entry_highlight_users.get()
         self.master.current_settings["visualizer_mode"] = self.master.visualizer_mode.get()
         self.master.current_settings["check_for_updates"] = "Yes" if self.master.check_for_updates.get() else "No"
+        self.master.current_settings["do_debug"] = self.master.do_debug.get()
 
         self.master.current_settings["fonts"]["main"]["size"] = self.master.fontsize_main.get()
         self.master.current_settings["fonts"]["main"]["family"] = self.master.fontfam_main.get()

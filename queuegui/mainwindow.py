@@ -691,19 +691,31 @@ class MainWindow(tk.Frame):
         """
         self.user.set(self.entry_user.get())
         scratch_location = self.get_scratch()
-        scontrolout = self.get_jobinfo(pid)
+
+        self.parent.debug("----------------------------------------")
+        self.parent.debug("Locating output file")
+        self.parent.debug(f"User: {self.user.get()}")
+        self.parent.debug(f"Scratch location: {scratch_location}")
 
         try:
             all_scratch_dirs = self.sftp_client.listdir(scratch_location)
+            self.parent.debug(f"{len(all_scratch_dirs)} scratch directories will be searched.")
+
         except IOError:
+            self.parent.debug(f"This scratch location was not found: {scratch_location}")
+
             self.log_update(f"Scratch directory '{scratch_location}' not found. ErrorCode_jut81")
             return "ErrorCode_jut81"
 
+        self.parent.debug(f"Searching for scratch directories that ends with pid={pid}:")
         for scratch in all_scratch_dirs:
             if scratch.endswith(pid):
+                self.parent.debug(f"Match found: {scratch}")
                 scratchdir = os.path.join(scratch_location, scratch)
                 break
         else:
+            self.parent.debug(f"No scratch directories ended with pid={pid}")
+
             self.log_update(f"Scratch directory for job {pid} not found. ErrorCode_hoq998")
             return "ErrorCode_hoq998"
 
@@ -712,16 +724,25 @@ class MainWindow(tk.Frame):
         # then you may get a false positive here, and the incorrect file is returned.
         # Be careful with what type of extensions you use.
         outputfile_ext = self.parent.current_settings["extensions"]["output"].split()
+        self.parent.debug(f"Searching for output files with these extensions: {', '.join(outputfile_ext)}")
+
         for ext in outputfile_ext:
             cmd = f"ls {scratchdir}/*{ext}"
             stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
             outputfile = stdout.read().decode('ascii').split()
+            self.parent.debug(f"Output file attempt: {outputfile}")
+
             try:
                 self.sftp_client.stat(outputfile[0])
+                self.parent.debug(f"Found output file: {outputfile}")
+
                 return helpers.purify_path(outputfile[0])
             except IOError:
+                self.parent.debug(f"Did not find {outputfile}")
+
                 continue
         else:
+            self.parent.debug(f"No output files found.")
             self.log_update(f"No output file was found using these extensions: {', '.join(outputfile_ext)}")
             self.log_update("ErrorCode_fov28")
             return "ErrorCode_fov28"
@@ -734,15 +755,26 @@ class MainWindow(tk.Frame):
         jobname = self.get_jobname(pid)
         workdir = self.get_workdir(pid)
 
+        self.parent.debug("----------------------------------------")
+        self.parent.debug("Locating input file")
+        self.parent.debug(f"Jobname: {jobname}")
+        self.parent.debug(f"Work directory: {workdir}")
+
         # Determine the correct extension for the input file
         inputfile_ext = self.parent.current_settings["extensions"]["input"].split()
+        self.parent.debug(f"Searching for input files with these extensions: {', '.join(inputfile_ext)}")
+
         for ext in inputfile_ext:
             inputfile = os.path.join(workdir, jobname+ext)
+            self.parent.debug(f"Input file attempt: {inputfile}")
             try:
                 self.sftp_client.stat(inputfile)
+                self.parent.debug(f"Found {inputfile}")
                 return helpers.remote_join(inputfile)
             except:
+                self.parent.debug(f"Did not find {inputfile}")
                 continue
+
         self.log_update("Input file not found. ErrorCode_juq81")
         return "ErrorCode_juq81"
 
