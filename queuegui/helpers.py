@@ -24,7 +24,7 @@ def joinpath(*args):
     return "/".join(args)
 
 
-def stem(path):
+def remote_stem(path):
     return path.split("/")[-1]
 
 
