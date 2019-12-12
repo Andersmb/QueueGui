@@ -730,15 +730,15 @@ class MainWindow(tk.Frame):
             cmd = f"ls {scratchdir}/*{ext}"
             stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
             outputfile = stdout.read().decode('ascii').split()
-            self.parent.debug(f"Output file attempt: {outputfile}")
+            self.parent.debug(f"Output files to attempt: {', '.join(outputfile)}")
 
             try:
-                self.sftp_client.stat(outputfile[0])
-                self.parent.debug(f"Found output file: {outputfile}")
+                self.sftp_client.stat(helpers.purify_path(outputfile[0]))
+                self.parent.debug(f"Found output file: {helpers.purify_path(outputfile[0])}")
 
                 return helpers.purify_path(outputfile[0])
             except IOError:
-                self.parent.debug(f"Did not find {outputfile}")
+                self.parent.debug(f"Did not find {helpers.purify_path(outputfile)}")
 
                 continue
         else:
@@ -765,7 +765,7 @@ class MainWindow(tk.Frame):
         self.parent.debug(f"Searching for input files with these extensions: {', '.join(inputfile_ext)}")
 
         for ext in inputfile_ext:
-            inputfile = os.path.join(workdir, jobname+ext)
+            inputfile = helpers.purify_path(helpers.remote_join(workdir, jobname+ext))
             self.parent.debug(f"Input file attempt: {inputfile}")
             try:
                 self.sftp_client.stat(inputfile)
