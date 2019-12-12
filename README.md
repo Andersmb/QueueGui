@@ -30,38 +30,26 @@
 
 ## Installation
 
-1. Download the git repository to your location of choice.
+1. Download (or clone) the git repository to your location of choice.
 
-2. In order to set your own preferences, QueueGui expects a file called `settings.json` to be located in `~/.QueueGui`. You need to create this file (it can be empty). On MacOS you can run in the terminal
+2. Install `requirements.txt` in your standard Python library (or set up virtual environment first, and then install). More on this below.
 
-    ```bash
-    mkdir $HOME/.QueueGui
-    touch $HOME/.QueueGui/settings.json
-    ```
-
-3. You will probably need to install some dependencies. No automatic way of doing this exists at this time, so you should just try to run the application and look at the errors you get. Then use `pip`to install the latest versions. 
-
-4. To run the application, navigate in your terminal to the directory `QueueGui/queuegui` in the project you downloaded from Github. To run the application, run in your terminal the following:
+3. To run the application, navigate your terminal to the directory `QueueGui/queuegui` in the project you downloaded from Github. To run the application, run in your terminal the following:
 
    ```bash
-   python3 queuegui.py
+   python queuegui.py
    ```
 
+4. At your first startup, you will be prompted to make the directory `~/QueueGui3`. QueueGui will store your personalized settings file (`settings.json`) here (and possibly other files in future versions). If you click "No", you will not be able to write your settings to file, and you will always use the default settings (which will inhibit certain functions).
+
 ## Requirements
+QueueGui has been developed for Python 3.8, but older 3.x version may also work (but has not been tested).
+To get the necessary dependencies, just install the `requirements.txt`:
 
-- Python3 (developed with version 3.8, but other 3.x versions are also likely to work)
-
-- `paramiko` for establishing SSH and SFTP connections
-
-- `tkinter` for the GUI
-
-- `matplotlib` for plotting
-
-- `json` for reading/writing settings to file
-
-- `tempfile` for making temporary directories that store files downloaded from the remote cluster
-
-- `requests` for sending HTTP requests to Github when checking for updates
+```bash
+pip install -r requirements.txt
+```
+You may want to set up a virtual environment if you don't want to install the modules globally in your default Python library.
 
   
 
