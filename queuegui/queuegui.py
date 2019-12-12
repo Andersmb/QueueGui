@@ -20,6 +20,7 @@ class QueueGui(tk.Tk):
         tk.Tk.__init__(self)
         self.name = "QueueGui3"
         self.do_debug = tk.BooleanVar()
+        self.rootdir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
         # Define constants for conversions
         self.AU2ANG = 0.529177249
@@ -36,7 +37,7 @@ class QueueGui(tk.Tk):
         self.filter_mode = tk.IntVar()
         self.filter_mode.set(0)
         self.check_for_updates = tk.BooleanVar()
-        self.check_for_updates.set(1)
+        self.check_for_updates.set(True)
         self.remote_version_file = "https://raw.githubusercontent.com/Andersmb/QueueGui/master/__VERSION__"
         self.cluster_data = {
             "stallo": {
@@ -105,10 +106,6 @@ class QueueGui(tk.Tk):
         self.tmp = tempfile.mkdtemp()
         print(f"Temporary files will be stored in:\n{self.tmp}")
 
-        # Check for updates
-        if self.check_for_updates.get():
-            self.update_checker()
-
         # Initialize the login window
         self.startup = True  # Necessary since no window needs to be forgotten the first time
         self.login_window = Login(self)
@@ -119,6 +116,10 @@ class QueueGui(tk.Tk):
         self.current_settings = self.load_settings()
         self.set_system_variables()
         self.set_fonts()
+
+        # Check for updates
+        if self.check_for_updates.get():
+            self.update_checker()
 
     def show_login(self):
         self.login_window.grid(row=0, column=0)
@@ -203,8 +204,8 @@ class QueueGui(tk.Tk):
         :return: None
         """
         try:
-            with open("__VERSION__") as f:
-                local_version = f.read()
+            with open(os.path.join(self.rootdir, "__VERSION__")) as f:
+                local_version = f.read().strip()
         except IOError:
             return
 
@@ -214,7 +215,7 @@ class QueueGui(tk.Tk):
 
             if local_version != remote_version:
                 msg = f"""
-                Version of {self.name} available! 
+                New version of {self.name} available! 
 
                 Your version: {local_version}
                 New version:  {remote_version}
