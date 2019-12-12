@@ -238,8 +238,10 @@ class QueueGui(tk.Tk):
         self.log_font = font.Font(family=self.fontfam_log.get(), size=self.fontsize_log.get())
         self.about_font = font.Font(family="Arial", size=16)
 
-    def debug(self, s):
-        if self.do_debug.get():
+    def debug(self, s="", header=False):
+        if header:
+            print("------------------------------------")
+        if s != "" and self.do_debug.get():
             print(s)
 
 
