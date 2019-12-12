@@ -577,7 +577,7 @@ class MainWindow(tk.Frame):
         :param f: str, path to file to download
         :return: str, path to downloaded file
         """
-        destination = os.path.join(self.parent.tmp, helpers.stem(f))
+        destination = os.path.join(self.parent.tmp, helpers.remote_stem(f))
         self.sftp_client.get(f, destination)
 
         return destination
@@ -691,6 +691,7 @@ class MainWindow(tk.Frame):
         """
         self.user.set(self.entry_user.get())
         scratch_location = self.get_scratch()
+        jobname = self.get_jobname(pid)
 
         self.parent.debug("----------------------------------------")
         self.parent.debug("Locating output file")
@@ -700,22 +701,19 @@ class MainWindow(tk.Frame):
         try:
             all_scratch_dirs = self.sftp_client.listdir(scratch_location)
             self.parent.debug(f"{len(all_scratch_dirs)} scratch directories will be searched.")
-
         except IOError:
             self.parent.debug(f"This scratch location was not found: {scratch_location}")
-
-            self.log_update(f"Scratch directory '{scratch_location}' not found. ErrorCode_jut81")
+            self.log_update(f"Scratch location '{scratch_location}' not found. ErrorCode_jut81")
             return "ErrorCode_jut81"
 
         self.parent.debug(f"Searching for scratch directories that ends with pid={pid}:")
         for scratch in all_scratch_dirs:
             if scratch.endswith(pid):
                 self.parent.debug(f"Match found: {scratch}")
-                scratchdir = os.path.join(scratch_location, scratch)
+                scratchdir = helpers.remote_join(scratch_location, scratch)
                 break
         else:
             self.parent.debug(f"No scratch directories ended with pid={pid}")
-
             self.log_update(f"Scratch directory for job {pid} not found. ErrorCode_hoq998")
             return "ErrorCode_hoq998"
 
@@ -727,19 +725,15 @@ class MainWindow(tk.Frame):
         self.parent.debug(f"Searching for output files with these extensions: {', '.join(outputfile_ext)}")
 
         for ext in outputfile_ext:
-            cmd = f"ls {scratchdir}/*{ext}"
-            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
-            outputfile = stdout.read().decode('ascii').split()
-            self.parent.debug(f"Output files to attempt: {', '.join(outputfile)}")
+            outputfile = helpers.remote_join(scratchdir, jobname+ext)
+            self.parent.debug(f"Output file to attempt: {outputfile}")
 
             try:
-                self.sftp_client.stat(helpers.purify_path(outputfile[0]))
-                self.parent.debug(f"Found output file: {helpers.purify_path(outputfile[0])}")
-
-                return helpers.purify_path(outputfile[0])
+                self.sftp_client.stat(outputfile)
+                self.parent.debug(f"Found output file: {outputfile}")
+                return outputfile
             except IOError:
-                self.parent.debug(f"Did not find {helpers.purify_path(outputfile)}")
-
+                self.parent.debug(f"Did not find {outputfile}")
                 continue
         else:
             self.parent.debug(f"No output files found.")
@@ -765,12 +759,12 @@ class MainWindow(tk.Frame):
         self.parent.debug(f"Searching for input files with these extensions: {', '.join(inputfile_ext)}")
 
         for ext in inputfile_ext:
-            inputfile = helpers.purify_path(helpers.remote_join(workdir, jobname+ext))
+            inputfile = helpers.remote_join(workdir, jobname+ext)
             self.parent.debug(f"Input file attempt: {inputfile}")
             try:
                 self.sftp_client.stat(inputfile)
                 self.parent.debug(f"Found {inputfile}")
-                return helpers.remote_join(inputfile)
+                return inputfile
             except:
                 self.parent.debug(f"Did not find {inputfile}")
                 continue
@@ -779,10 +773,9 @@ class MainWindow(tk.Frame):
         return "ErrorCode_juq81"
 
     def open_output(self, *args):
+        self.parent.debug(f"OPENING OUTPUT FILE", header=True)
         pid = self.selected_text.get()
         outputfile = self.locate_output_file(pid)
-        if "ErrorCode_" in outputfile:
-            return outputfile
 
         # It is significantly faster to actually download the output file
         # and open it locally (especially if the file is large).
@@ -798,6 +791,7 @@ class MainWindow(tk.Frame):
             self.txt.insert(tk.END, line)
 
     def open_visualizer(self, *args):
+        self.parent.debug(f"OPENING OUTPUT IN VISUALIZER", header=True)
         pid = self.selected_text.get()
         outputfile = self.locate_output_file(pid)
         destination = os.path.join(self.master.tmp, os.path.basename(outputfile))
@@ -865,6 +859,7 @@ class MainWindow(tk.Frame):
         return "ErrorCode_lib73"
 
     def open_input(self, *args):
+        self.parent.debug(f"OPENING INPUT FILE", header=True)
         inputfile = self.locate_input_file()
         if "ErrorCode_" in inputfile:
             return inputfile
@@ -1001,22 +996,30 @@ class MainWindow(tk.Frame):
             return "ErrorCode_pol98"
 
     def get_jobname(self, pid):
+        self.parent.debug(header=True)
+        self.parent.debug(f"Searching for job name for pid={pid}")
+
         cmd = "scontrol show jobid {}".format(pid)
         stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
         info = stdout.read().decode('ascii').splitlines()
 
         for line in info:
             if line.strip().startswith("StdOut=/"):
-                return os.path.splitext(os.path.basename(line.split("=", 1)[1]))[0]
+                jobname = os.path.splitext(os.path.basename(line.split("=", 1)[1]))[0]
+                self.parent.debug(f"Jobname found: {jobname}")
+                return jobname
 
     def get_workdir(self, pid):
+        self.parent.debug(s="Searching for work directory", header=True)
         cmd = "scontrol show jobid {}".format(pid)
         stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
         output = stdout.read().decode('ascii').splitlines()
 
         for line in output:
             if line.strip().startswith("WorkDir"):
-                return line.split("=", 1)[1]
+                workdir = line.split("=", 1)[1]
+                self.parent.debug(f"Work directory found: {workdir}")
+                return workdir
         else:
             self.log_update("WorkDir not found. ErrorCode_nut62")
             return "ErrorCode_nut62"
