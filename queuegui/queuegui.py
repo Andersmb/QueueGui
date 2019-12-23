@@ -203,17 +203,25 @@ class QueueGui(tk.Tk):
 
         :return: None
         """
+        self.debug(s="CHECKING FOR UPDATES", header=True)
+        self.debug(f"Local version file: {os.path.join(self.rootdir, '__VERSION__')}")
         try:
             with open(os.path.join(self.rootdir, "__VERSION__")) as f:
                 local_version = f.read().strip()
+                self.debug(f"Local version: {local_version}")
         except IOError:
+            self.debug("Local version file not found")
             return
 
+        self.debug("Making GET request")
         r = requests.get(self.remote_version_file)
         if r.status_code == requests.codes.ok:
+            self.debug(f"GET request OK with status code: {r.status_code}")
             remote_version = r.content.decode("ascii").strip()
+            self.debug(f"Remote version: {remote_version}")
 
             if local_version != remote_version:
+                self.debug(f"New version available")
                 msg = f"""
                 New version of {self.name} available! 
 
@@ -227,6 +235,10 @@ class QueueGui(tk.Tk):
                 (Psst! You can turn off update notifications in the preferences)
                 """
                 messagebox.showinfo(self.title, msg)
+            else:
+                self.debug(f"No update available.")
+        else:
+            self.debug(f"GET request failed with status code: {r.status_code}")
 
     def set_fonts(self):
         """
