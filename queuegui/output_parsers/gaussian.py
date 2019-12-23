@@ -1,51 +1,43 @@
 #! /usr/bin/env python
-import time
 
-# Define the class GaussianOut, which will be Gaussian output files.
+
 class GaussianOut(object):
     def __init__(self, filename):
         self.filename = filename
 
+        with open(self.filename) as f:
+            self.source = f.read()
+            self.content = self.source.splitlines()
+
     def __repr__(self):
         return "<GaussianOut(filename={})>".format(self.filename)
-
-    def content(self):
-        """Return a generator that iterates over lines in the file, one by one."""
-        with open(self.filename, "r") as f:
-            while True:
-                yield next(f)
-    
-    def source(self):
-        """Return the file content as a string."""
-        with open(self.filename, "r") as f:
-            return f.read()
     
     def normaltermination(self):
         """Evaluate whether the job
         terminated normally, and return a Boolean:
         True if termination was normal, False if not."""
-        if list(self.content())[-1].strip().startswith("Normal termination"):
+        if self.content[-1].strip().startswith("Normal termination"):
             return True
         return False
     
     def scf_energy(self):
         """Return a list of floats containing the optimized SCF energies"""
-        energies = filter(lambda x: x.strip().startswith("SCF Done"), self.content())
+        energies = filter(lambda x: x.strip().startswith("SCF Done"), self.content)
         return [float(el.split()[4]) for el in energies]
 
     def no_scfcycles(self):
         """Return a list of floats containing the number of SCF iterations needed for converging each geom step"""
-        cycles = filter(lambda x: x.strip().startswith("SCF Done:"), self.content())
+        cycles = filter(lambda x: x.strip().startswith("SCF Done:"), self.content)
         return [int(el.split()[7]) for el in cycles]
 
     def walltime(self):
         """Return the total walltime for the job (float) in seconds"""
-        w = [line for line in self.content() if line.strip().startswith("Elapsed time:")][0].split()
+        w = [line for line in self.content if line.strip().startswith("Elapsed time:")][0].split()
         return float(w[2])*24*60*60 + float(w[4])*60*60 + float(w[6])*60 + float(w[8])
 
     def no_atoms(self):
         """Return the number of atoms of the system (integer)"""
-        for line in self.content():
+        for line in self.content:
             if line.strip().startswith("NAtoms="):
                 return int(line.strip().split()[1])
 
@@ -64,14 +56,14 @@ class GaussianOut(object):
         traj = []
 
         # Convert the generator to a list to be used in the inner loop. We can still use the generator for the outer loop
-        content = list(self.content())
-        for i,line in enumerate(self.content()):
+        content = self.content
+        for i, line in enumerate(self.content):
             if line.strip().startswith("Standard orientation"):
                 for j in range(natoms):
                     traj.append(content[i+j+5].strip())
 
         # for convenience we define a variable that contains the number of geometries in the trajectory
-        ngeoms = len(traj)/natoms
+        ngeoms = int(len(traj)/natoms)
         
         # Now we make the long list into a list of list, where each sublist contains one geometry
         traj = [traj[natoms*i:natoms*(i+1)] for i in range(ngeoms)]
@@ -97,38 +89,38 @@ class GaussianOut(object):
     def no_basisfunctions(self):
         """Return the number of basis functions (integer)."""
         nbasis = None
-        for line in self.content():
+        for line in self.content:
             if line.strip().startswith("NBasis="):
                 return int(line.strip().split()[1])
 
     def maxforce(self):
         """Return a list of floats containing all Max Forces for each geometry iteration"""
-        l = filter(lambda x: ' '.join(x.split()).startswith("Maximum Force"), self.content())
+        l = filter(lambda x: ' '.join(x.split()).startswith("Maximum Force"), self.content)
         l = map(lambda x: x.split()[2], l)
         return list(map(float, l))
 
     def rmsforce(self):
         """Return a list of floats containing all RMS Forces for each geometry iteration"""
-        l = filter(lambda x: ' '.join(x.split()).startswith("RMS Force"), self.content())
+        l = filter(lambda x: ' '.join(x.split()).startswith("RMS Force"), self.content)
         l = map(lambda x: x.split()[2], l)
         return list(map(float, l))
 
     def maxstep(self):
         """Return a list of floats containing all Max Steps for each geometry iteration"""
-        l = filter(lambda x: ' '.join(x.split()).startswith("Maximum Displacement"), self.content())
+        l = filter(lambda x: ' '.join(x.split()).startswith("Maximum Displacement"), self.content)
         l = map(lambda x: x.split()[2], l)
         return list(map(float, l))
 
     def rmsstep(self):
         """Return a list of floats containing all RMS Steps for each geometry iteration"""
-        l = filter(lambda x: ' '.join(x.split()).startswith("RMS Displacement"), self.content())
+        l = filter(lambda x: ' '.join(x.split()).startswith("RMS Displacement"), self.content)
         l = map(lambda x: x.split()[2], l)
         return list(map(float, l))
     
     def tol_maxforce(self):
         """Return the Max Force convergence tolerance as float"""
         t = None
-        for line in self.content():
+        for line in self.content:
             if line.strip().startswith("Maximum Force"):
                 t = line.strip().split()[3]
                 if "D" in t:
@@ -138,7 +130,7 @@ class GaussianOut(object):
     def tol_rmsforce(self):
         """Return the RMSD Force convergence tolerance as float"""
         t = None
-        for line in self.content():
+        for line in self.content:
             if ' '.join(line.strip().split()).startswith("RMS Force"):
                 t = line.strip().split()[3]
                 if "D" in t:
@@ -148,7 +140,7 @@ class GaussianOut(object):
     def tol_maxstep(self):
         """Return the Max Step convergence tolerance as float"""
         t = None
-        for line in self.content():
+        for line in self.content:
             if line.strip().startswith("Maximum Displacement"):
                 t = line.strip().split()[3]
                 if "D" in t: # Gaussian uses the D in its scientific notation of floats. stupid!
@@ -158,7 +150,7 @@ class GaussianOut(object):
     def tol_rmsstep(self):
         """Return the RMSD Step convergence tolerance as float"""
         t = None
-        for line in self.content():
+        for line in self.content:
             if ' '.join(line.strip().split()).startswith("RMS Displacement"):
                 t = line.strip().split()[3]
                 if "D" in t:
