@@ -2,6 +2,8 @@ import tkinter as tk
 import paramiko as pmk
 
 import helpers
+from toolbox import ToolBox
+from convertme import ConvertMe
 
 
 class Login(tk.Frame):
@@ -13,6 +15,8 @@ class Login(tk.Frame):
         """
         tk.Frame.__init__(self, parent, **kwargs)
         self.parent = parent
+        self.pady = 2
+        self.padx = 0
 
         # Set the ssh client
         self.ssh_client = pmk.SSHClient()
@@ -24,25 +28,28 @@ class Login(tk.Frame):
 
         # Define and place widgets
         # Buttons
-        tk.Button(self, text="Log in", command=self.authorize).grid(row=3, column=0, sticky=tk.W)
-        tk.Button(self, text="Quit", command=self.quit).grid(row=4, column=0, sticky=tk.W)
+        tk.Button(self, text="Log in", fg="green", command=self.authorize).grid(row=3, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        tk.Button(self, text="ToolBox", fg="blue", command=self.launch_toolbox).grid(row=5, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        tk.Button(self, text="ConvertMe", fg="blue", command=self.launch_convertme).grid(row=6, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        tk.Button(self, text="Quit", fg="red", command=self.quit).grid(row=99, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+
 
         # Labels
-        tk.Label(self, text="Username: ").grid(row=0, column=0, sticky=tk.E)
-        tk.Label(self, text="Password: ").grid(row=1, column=0, sticky=tk.E)
-        tk.Label(self, text="Host: ").grid(row=2, column=0, sticky=tk.E)
-        tk.Label(self, text="Tip: Press <Control-c> to circle hostnames", font=("", 10)).grid(row=3, column=1)
+        tk.Label(self, text="Username: ").grid(row=0, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        tk.Label(self, text="Password: ").grid(row=1, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        tk.Label(self, text="Hostname: ").grid(row=2, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        tk.Label(self, text="Tip: Press <Control-c> to circle hostnames", font=("", 10)).grid(row=3, column=1, pady=self.pady, padx=self.padx)
 
         # Option Menus
-        tk.OptionMenu(self, self.parent.host, *self.host_options).grid(row=2, column=1, sticky=tk.W)
+        tk.OptionMenu(self, self.parent.host, *self.host_options).grid(row=2, column=1, sticky=tk.W, pady=self.pady, padx=self.padx)
 
         # Text entries
         self.entry_user = tk.Entry(self)
         self.entry_user.focus_set()
         self.entry_pwd = tk.Entry(self, show="*")
 
-        self.entry_user.grid(row=0, column=1, sticky=tk.W)
-        self.entry_pwd.grid(row=1, column=1, sticky=tk.W)
+        self.entry_user.grid(row=0, column=1, sticky=tk.W, pady=self.pady, padx=self.padx)
+        self.entry_pwd.grid(row=1, column=1, sticky=tk.W, pady=self.pady, padx=self.padx)
 
         # Bind the return key for easier login
         self.entry_pwd.bind("<Return>", self.authorize)
@@ -74,3 +81,9 @@ class Login(tk.Frame):
             l_error = tk.Label(self, text="Login failed...", fg="red")
             l_error.grid(row=4, column=1, sticky=tk.W)
             l_error.after(5000, l_error.destroy)
+
+    def launch_toolbox(self):
+        return ToolBox(self)
+
+    def launch_convertme(self):
+        return ConvertMe(self)
