@@ -202,8 +202,11 @@ class MrchemOut(object):
     def version(self):
         """Return the line of output describing the MRChem version"""
         for line in self.content:
-            if line.split()[1] == "VERSION":
-                return " ".join(line)
+            try:
+                if line.split()[1] == "VERSION":
+                    return " ".join(line.split())
+            except IndexError:
+                continue
 
     def no_cores(self):
         """
