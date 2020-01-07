@@ -790,6 +790,9 @@ class MainWindow(tk.Frame):
         for line in lines:
             self.txt.insert(tk.END, line)
 
+        if self.parent.skip_end_output.get():
+            self.txt.see("end")
+
     def open_visualizer(self, *args):
         self.parent.debug(f"OPENING OUTPUT IN VISUALIZER", header=True)
         pid = self.selected_text.get()

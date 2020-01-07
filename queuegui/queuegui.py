@@ -13,6 +13,10 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from mainwindow import MainWindow
 from login import Login
 
+####################
+DEV = False
+####################
+
 
 class QueueGui(tk.Tk):
     """
@@ -20,7 +24,7 @@ class QueueGui(tk.Tk):
     """
     def __init__(self):
         tk.Tk.__init__(self)
-        self.name = "QueueGui3"
+        self.name = "QueueGui3_DEV" if DEV else "QueueGui3"
         self.do_debug = tk.BooleanVar()
         self.rootdir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -75,6 +79,7 @@ class QueueGui(tk.Tk):
         self.path_to_notes = tk.StringVar()
         self.extensions_inputfiles = tk.StringVar()
         self.extensions_outputfiles = tk.StringVar()
+        self.skip_end_output = tk.BooleanVar()
 
         # Define default settings
         self.default_settings = {
@@ -85,6 +90,7 @@ class QueueGui(tk.Tk):
             "cpu_usage_highlight_users": "",
             "visualizer_mode": self.visualizer_mode.get(),
             "do_debug": False,
+            "skip_end_output": False,
 
             "fonts": {
                 "main": {"size": 13, "family": "Chalkboard SE"},
@@ -172,6 +178,7 @@ class QueueGui(tk.Tk):
         self.cpu_usage_highlight_users.set(self.current_settings["cpu_usage_highlight_users"])
         self.visualizer_mode.set(self.current_settings["visualizer_mode"])
         self.do_debug.set(self.current_settings["do_debug"])
+        self.skip_end_output.set(self.current_settings["skip_end_output"])
 
         if self.current_settings["check_for_updates"] == "Yes":
             self.check_for_updates.set(True)

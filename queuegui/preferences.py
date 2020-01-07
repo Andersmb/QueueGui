@@ -148,13 +148,11 @@ class Preferences(tk.Toplevel):
 
         # ROW 13
         tk.Label(self.frame, text="Highlight these users in CPU usage: (space sep)").grid(row=13, column=0, sticky=tk.E)
-
         self.entry_highlight_users = tk.Entry(self.frame)
         self.entry_highlight_users.grid(row=13, column=1, sticky=tk.W)
         self.entry_highlight_users.insert(0, self.master.cpu_usage_highlight_users.get())
 
         # ROW 14
-        tk.Button(self.frame, text="Apply", command=self.get_new_settings, fg="green").grid(row=14, column=0, sticky=tk.W)
         tk.Checkbutton(self.frame, text="Preview", variable=self.preview).grid(row=14, column=1, sticky=tk.W)
 
         # ROW 15
@@ -162,11 +160,17 @@ class Preferences(tk.Toplevel):
                        text="Run QueueGui in debug mode",
                        variable=self.master.do_debug).grid(row=15, column=0, sticky=tk.W)
 
-        # Buttons
-        tk.Button(self.frame, text="ColorPicker", command=self.colorpicker2).grid(row=16, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="FontPicker", command=self.fontpicker).grid(row=17, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="Restore defaults", command=self.restore_defaults).grid(row=18, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="Exit", command=self.destroy, fg="red", bg="black").grid(row=19, column=0, sticky=tk.W)
+        # ROW 16
+        tk.Checkbutton(self.frame,
+                       text="Skip to the end when opening output files",
+                       variable=self.master.skip_end_output).grid(row=16, column=0, sticky=tk.W)
+
+        # Buttons on last row
+        tk.Button(self.frame, text="Apply", command=self.get_new_settings, fg="green").grid(row=95, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="ColorPicker", command=self.colorpicker2).grid(row=96, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="FontPicker", command=self.fontpicker).grid(row=97, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="Restore defaults", command=self.restore_defaults).grid(row=98, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="Exit", command=self.destroy, fg="red", bg="black").grid(row=99, column=0, sticky=tk.W)
 
     def get_new_settings(self):
         """
@@ -179,6 +183,7 @@ class Preferences(tk.Toplevel):
         self.master.current_settings["visualizer_mode"] = self.master.visualizer_mode.get()
         self.master.current_settings["check_for_updates"] = "Yes" if self.master.check_for_updates.get() else "No"
         self.master.current_settings["do_debug"] = self.master.do_debug.get()
+        self.master.current_settings["skip_end_output"] = self.master.skip_end_output.get()
 
         self.master.current_settings["fonts"]["main"]["size"] = self.master.fontsize_main.get()
         self.master.current_settings["fonts"]["main"]["family"] = self.master.fontfam_main.get()
