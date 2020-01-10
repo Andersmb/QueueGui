@@ -7,6 +7,7 @@ import paramiko as pmk
 import subprocess
 import matplotlib
 matplotlib.use("tkagg")
+import matplotlib.pyplot as plt
 
 from preferences import Preferences
 from toolbox import ToolBox
@@ -583,7 +584,89 @@ class MainWindow(tk.Frame):
         return destination
 
     def geometry_convergence(self, *args):
-        self.log_update("Not implemented.")
+        self.parent.debug(f"INSPECTING GEOMETRY CONVERGENCE", header=True)
+        pid = self.selected_text.get()
+        outputfile = self.locate_output_file(pid)
+        destination = os.path.join(self.master.tmp, os.path.basename(outputfile))
+
+        self.sftp_client.get(outputfile, destination)
+
+        G, O, M = self.determine_job_software(destination)
+
+        if M:
+            self.parent.debug(f"...MRChem job detected. Geometry convergence not supported.")
+            self.log_update("Geometry convergence not supported by MRChem jobs.")
+
+        # Collect data to be plotted
+        if G:
+            self.parent.debug("...Gaussian output file detected")
+            output = GaussianOut(destination)
+        elif O:
+            self.parent.debug("...ORCA output file detected")
+            output = OrcaOut(destination)
+        else:
+            self.parent.debug("...Output file not recognized. Inspect code!")
+            self.log_update("Output file not recognized. Inspect code!")
+            return
+
+        energies = output.scf_energy()
+        energies_relative = [(e - energies[0]) * 627.509 for e in energies]
+        energies_delta = [abs(energies[i] - energies[i-1]) for i, e in enumerate(energies[1:])]
+        no_scf_iter = output.no_scfcycles()
+        maxforce = output.maxforce()
+        rmsforce = output.rmsforce()
+        maxstep = output.maxstep()
+        rmsstep = output.rmsstep()
+
+        tol_maxforce = output.tol_maxforce()
+        tol_rmsforce = output.tol_rmsforce()
+        tol_maxstep = output.tol_maxstep()
+        tol_rmsstep = output.tol_rmsstep()
+
+        xs_scf = [i for i in range(1, len(no_scf_iter) + 1)]
+
+        # Set up figure
+        FS = 14
+        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(10, 5), dpi=100)
+
+        axes[0, 1].set_yscale("log")
+        axes[0, 2].set_yscale("log")
+        axes[1, 2].set_yscale("log")
+
+        axes[0, 0].set_title("No. SCF iter")
+        axes[0, 1].set_title("Forces (au)")
+        axes[0, 2].set_title("Step (au)")
+        axes[1, 0].set_title("Absolute Energy (au)")
+        axes[1, 1].set_title("Relative Energy (kcal/mol)")
+        axes[1, 2].set_title("Energy change (au)")
+
+        for row in axes:
+            for ax in row:
+                ax.tick_params("both", labelsize=FS)
+                ax.grid(True)
+
+        axes[0, 0].bar(xs_scf, no_scf_iter, color="Skyblue")
+
+        axes[0, 1].plot(maxforce, lw=2, color="red")
+        axes[0, 1].plot(rmsforce, lw=2, color="blue")
+        axes[0, 1].plot([tol_maxforce for _ in range(len(maxforce))], ls="--", color="red")
+        axes[0, 1].plot([tol_rmsforce for _ in range(len(rmsforce))], ls="--", color="blue")
+
+        axes[0, 2].plot(maxstep, lw=2, color="red")
+        axes[0, 2].plot(rmsstep, lw=2, color="blue")
+        axes[0, 2].plot([tol_maxstep for _ in range(len(maxstep))], ls="--", color="red")
+        axes[0, 2].plot([tol_rmsstep for _ in range(len(rmsstep))], ls="--", color="blue")
+
+        axes[1, 0].plot(energies, lw=2, color="black")
+        axes[1, 1].plot(energies_relative, lw=2, color="black")
+        axes[1, 2].plot(energies_delta, lw=2, color="black")
+        if O:
+            tol_echange = output.scf_convergence_tol_e()
+            axes[1, 2].plot([tol_echange for _ in range(len(energies_delta))], ls="--", color="black")
+
+        plt.tight_layout()
+
+        return plt.show()
 
     def scf_convergence(self, *args):
         self.log_update("Not implemented")
