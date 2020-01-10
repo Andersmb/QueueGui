@@ -68,7 +68,6 @@ class OrcaOut(object):
     
     def no_basisfunctions(self):
         """Return the number of basis functions (integer)."""
-        nbasis = None
         for line in self.content:
             if line.strip().startswith("Basis Dimension"):
                 return int(line.strip().split()[-1])
@@ -97,14 +96,12 @@ class OrcaOut(object):
 
     def tol_maxforce(self):
         """Return the Max Force convergence tolerance as float"""
-        tol = None
         for line in self.content:
             if line.strip().startswith("MAX gradient") and len(line.split()) > 4:
                 return float(line.strip().split()[3])
 
     def tol_rmsforce(self):
         """Return the RMSD Force convergence tolerance as float"""
-        tol = None
         for line in self.content:
             if line.strip().startswith("RMS gradient") and len(line.split()) > 4:
                 return float(line.strip().split()[3])
