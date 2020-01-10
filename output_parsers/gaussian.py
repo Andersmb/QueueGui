@@ -88,7 +88,6 @@ class GaussianOut(object):
     
     def no_basisfunctions(self):
         """Return the number of basis functions (integer)."""
-        nbasis = None
         for line in self.content:
             if line.strip().startswith("NBasis="):
                 return int(line.strip().split()[1])
@@ -101,7 +100,7 @@ class GaussianOut(object):
 
     def rmsforce(self):
         """Return a list of floats containing all RMS Forces for each geometry iteration"""
-        l = filter(lambda x: ' '.join(x.split()).startswith("RMS Force"), self.content)
+        l = filter(lambda x: ' '.join(x.split()).startswith("RMS Force") and "=" not in x, self.content)
         l = map(lambda x: x.split()[2], l)
         return list(map(float, l))
 
@@ -119,7 +118,6 @@ class GaussianOut(object):
     
     def tol_maxforce(self):
         """Return the Max Force convergence tolerance as float"""
-        t = None
         for line in self.content:
             if line.strip().startswith("Maximum Force"):
                 t = line.strip().split()[3]
@@ -129,7 +127,6 @@ class GaussianOut(object):
 
     def tol_rmsforce(self):
         """Return the RMSD Force convergence tolerance as float"""
-        t = None
         for line in self.content:
             if ' '.join(line.strip().split()).startswith("RMS Force"):
                 t = line.strip().split()[3]
@@ -139,7 +136,6 @@ class GaussianOut(object):
 
     def tol_maxstep(self):
         """Return the Max Step convergence tolerance as float"""
-        t = None
         for line in self.content:
             if line.strip().startswith("Maximum Displacement"):
                 t = line.strip().split()[3]
@@ -149,7 +145,6 @@ class GaussianOut(object):
 
     def tol_rmsstep(self):
         """Return the RMSD Step convergence tolerance as float"""
-        t = None
         for line in self.content:
             if ' '.join(line.strip().split()).startswith("RMS Displacement"):
                 t = line.strip().split()[3]
