@@ -222,6 +222,11 @@ class MainWindow(tk.Frame):
                                         bg=self.master.background_color.get())
         self.label_monitor_q.grid(row=4, column=1)
 
+        # Label for displaying the username and hostname
+        tk.Label(self.bot,
+                 text=f"<{self.parent.user.get()}@{self.parent.cluster_data[self.parent.host.get()]['hostname']}>",
+                 bg=self.master.background_color.get()).grid(row=0, column=5, pady=5, padx=5)
+
         # Check buttons
         tk.Checkbutton(self.topleft,
                        text="Monitor queue",
