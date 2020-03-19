@@ -80,6 +80,7 @@ the selected PID should be visible in a text label in the main window.
 - Kill Selected Job
 - Kill All Jobs
 - Kill job range
+- Update job parameters
 - Plot SCF convergence
 - Plot geometry convergence
 - Open output in visualizer
@@ -116,3 +117,15 @@ Use ColorPicker to get a color map, and click on a color to update the backgroun
 
 If the "Preview" button is checked, then the settings file is not overwritten when you click "Apply". It is a way to
 test your settings without changing the settings file.
+
+### Detailed instructions for certain functionalities
+- **Updating job parameters**: Select a process ID by double-clicking on one in the queue. Then right-click
+  the "Last selected job" label on the main window. This opens a window where you can specify a limited
+  number of parameters to update. The current values are automatically filled in. Note that the memory
+  per node must be given in megabytes without any units explicitly given. Also note that most parameters
+  can only be updated for pending jobs. QueueGui internally sends a "$ scontrol update jobid $PID" command
+  to the cluster. The command and stderr is reproduced in the main window's log.
+  
+- **Display input file / output file / submit script file**: To Be Continued
+
+- **Open output file from running job in visualization software**: To Be Continued
