@@ -123,7 +123,7 @@ test your settings without changing the settings file.
   the "Last selected job" label on the main window. This opens a window where you can specify a limited
   number of parameters to update. The current values are automatically filled in. Note that the memory
   per node must be given in megabytes without any units explicitly given. Also note that most parameters
-  can only be updated for pending jobs. QueueGui internally sends a "$ scontrol update jobid $PID" command
+  can only be updated for pending jobs. QueueGui internally sends a `$ scontrol update jobid $PID` command
   to the cluster. The command and stderr is reproduced in the main window's log.
   
 - **Display input file / output file / submit script file**: To Be Continued
