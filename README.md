@@ -129,3 +129,11 @@ test your settings without changing the settings file.
 - **Display input file / output file / submit script file**: To Be Continued
 
 - **Open output file from running job in visualization software**: To Be Continued
+
+- **Display job history**: To Be Continued
+
+- **Filtering by job status**: To Be Continued
+
+- **Filtering by free text**: To Be Continued
+
+- **Killing jobs**: To Be Continued
