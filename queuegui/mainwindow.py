@@ -4,6 +4,7 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 import os
 import re
+import requests
 import paramiko as pmk
 import subprocess
 import matplotlib
@@ -34,6 +35,7 @@ class MainWindow(tk.Frame):
         self.jobhisfilter = tk.StringVar()
         self.job_starttime = tk.StringVar()
         self.selected_text = tk.StringVar()
+        self.url_readme = "https://raw.githubusercontent.com/Andersmb/QueueGui/master/README.md"
 
         # We have to once again establish the connection to the remote cluster
         # (apparently the established connection from Login does not hold)
@@ -337,7 +339,13 @@ class MainWindow(tk.Frame):
         return Preferences(self)
 
     def show_user_manual(self):
-        self.log_update("Not implemented yet")
+        with requests.session() as s:
+            readme = s.get(self.url_readme).content.decode('utf-8')
+
+        self.txt.config(state=tk.NORMAL)
+        self.txt.delete(1.0, tk.END)
+        for line in readme:
+            self.txt.insert(tk.END, line)
 
     def apply_settings(self):
         # Update the start time options
@@ -345,9 +353,6 @@ class MainWindow(tk.Frame):
 
         # Update all widgets by re-placing them
         self.place_widgets()
-
-    def show_user_manual(self):
-        self.log_update("Not implemented yet")
 
     def show_about_page(self):
         about = f"""\n
