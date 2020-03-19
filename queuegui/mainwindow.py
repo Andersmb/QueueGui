@@ -3,6 +3,7 @@ from tkinter import simpledialog, messagebox
 from collections import OrderedDict
 from datetime import datetime, timedelta
 import os
+import re
 import paramiko as pmk
 import subprocess
 import matplotlib
@@ -214,8 +215,10 @@ class MainWindow(tk.Frame):
         self.label_selected_text = tk.Label(self.topleft,
                                             justify=tk.LEFT,
                                             text="<Selected PID goes here>",
-                                            bg=self.master.background_color.get())
+                                            bg=self.master.background_color.get(),
+                                            font=self.parent.main_font)
         self.label_selected_text.grid(row=4, column=0)
+        self.label_selected_text.bind("<Button-2>", self.update_job)
 
         self.label_monitor_q = tk.Label(self.topleft,
                                         text="Running: 0\nPending: 0",
@@ -386,7 +389,7 @@ class MainWindow(tk.Frame):
         :param args: Event from Check box
         :return:
         """
-        cmd = "squeue -u ambr -o '%.20T'"
+        cmd = f"squeue -u {self.parent.user.get()} -o '%.20T'"
         stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
         q = stdout.readlines()
         status = map(lambda x: x.strip(), q[1:])
@@ -1116,7 +1119,7 @@ class MainWindow(tk.Frame):
             return "ErrorCode_nut62"
 
     def get_jobstatus(self, pid):
-        cmd = "scontrol show jobid {}".format(pid)
+        cmd = f"scontrol show jobid {pid}"
         stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
         output = stdout.read().decode('ascii').splitlines()
 
@@ -1180,5 +1183,122 @@ class MainWindow(tk.Frame):
             self.log_update("Source of output not found. ErrorCode kux81")
             return "ErrorCode kux81"
 
+    def update_job(self, event):
+        return UpdateJob(self, self.selected_text.get(), self.entry_user.get())
+
+
+class UpdateJob(tk.Toplevel):
+    def __init__(self, parent, pid, user):
+        tk.Toplevel.__init__(self, parent)
+        self.parent = parent
+        self.pid = pid
+        self.user = user
+
+        self.ssh_client = self.parent.ssh_client
+        self.jobinfo = self.parent.get_jobinfo(self.pid).splitlines()
+
+        self.account = tk.StringVar()
+        self.account.set(self.get_job_account())
+
+        self.frame = tk.Frame(self)
+        self.frame.grid(row=0, column=0)
+
+        tk.Label(self.frame, text=f"Update Job Parameters for Job {self.pid}", font=self.parent.parent.main_font).grid(row=0, column=0)
+
+        tk.Button(self.frame, text="Close", font=self.parent.parent.main_font,
+                  command=self.destroy).grid(row=99, column=0, sticky=tk.W)
+        tk.Button(self.frame, text="Update Job", font=self.parent.parent.main_font,
+                  command=self.update).grid(row=98, column=0, sticky=tk.W)
+
+        tk.Label(self.frame, text="Account", font=self.parent.parent.main_font).grid(row=1, column=0, sticky=tk.W)
+        tk.Label(self.frame, text="Memory per node (MB)", font=self.parent.parent.main_font).grid(row=2, column=0, sticky=tk.W)
+        tk.Label(self.frame, text="Time limit (d-hh:mm:ss)", font=self.parent.parent.main_font).grid(row=3, column=0, sticky=tk.W)
+        tk.Label(self.frame, text="Number of nodes", font=self.parent.parent.main_font).grid(row=4, column=0, sticky=tk.W)
+
+        self.optmenu_account = tk.OptionMenu(self.frame, self.account, *self.get_all_accounts())
+        self.optmenu_account.config(font=self.parent.parent.main_font)
+        self.optmenu_account["menu"].config(font=self.parent.parent.main_font)
+        self.e_mem = tk.Entry(self.frame, width=10, font=self.parent.parent.main_font)
+        self.e_time = tk.Entry(self.frame, width=10, font=self.parent.parent.main_font)
+        self.e_node = tk.Entry(self.frame, width=10, font=self.parent.parent.main_font)
+        self.optmenu_account.grid(row=1, column=1, sticky=tk.W)
+        self.e_mem.grid(row=2, column=1, sticky=tk.W)
+        self.e_time.grid(row=3, column=1, sticky=tk.W)
+        self.e_node.grid(row=4, column=1, sticky=tk.W)
+
+        self.e_mem.insert(0, self.get_job_memory())
+        self.e_time.insert(0, self.get_job_timelimit())
+        self.e_node.insert(0, self.get_job_nodes())
+
+    def update(self):
+        self.parent.log_update(f"Updating job {self.pid}")
+        self.parent.parent.debug("Updating job parameters", header=True)
+
+        cmds = [f"scontrol update jobid {self.pid} account {self.account.get()}",
+                f"scontrol update jobid {self.pid} timelimit {self.e_time.get()}",
+                f"scontrol update jobid {self.pid} numnodes {self.e_node.get()}",
+                f"scontrol update jobid {self.pid} minmemorynode {self.e_mem.get()}"]
+
+        for cmd in cmds:
+            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+            err = stderr.read().decode('ascii').strip()
+            self.parent.log_update(f"...command: {cmd}")
+            self.parent.log_update(f"...stderr: {err}")
+
+            self.parent.parent.debug(f"...running command: {cmd}")
+            self.parent.parent.debug(f"...stderr: {err}")
+
+    def get_all_accounts(self):
+        self.parent.parent.debug(f"Getting active accounts for user={self.user}", header=True)
+        host = self.parent.parent.host.get()
+        pattern = re.compile(r"[a-zA-Z]{2}[0-9]{4}k")  # This will match al accunts at uninett
+
+        if host == "stallo":
+            cmd = "/global/apps/gold/2.1.5.0/bin/cost"
+            self.parent.parent.debug(f"...command to send: {cmd}")
+
+            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+            self.parent.parent.debug("...command sent to Stallo")
+            output = stdout.read().decode("ascii")
+
+            self.parent.parent.debug(f"...RE pattern: {pattern}")
+
+            accounts = set(pattern.findall(output))
+            self.parent.parent.debug(f"...matched user accounts: {', '.join(accounts)}")
+            return list(accounts)
+
+        else:
+            cmd = "/cluster/bin/cost"
+            self.parent.parent.debug(f"Command to send: {cmd}")
+
+            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+            self.parent.parent.debug("...command sent to Stallo")
+            output = stdout.read().decode("ascii")
+
+            self.parent.parent.debug(f"...RE pattern: {pattern}")
+
+            accounts = set(pattern.findall(output))
+            self.parent.parent.debug(f"...matched user accounts: {', '.join(accounts)}")
+            return list(accounts)
+
+    def get_job_account(self):
+        account = [line for line in self.jobinfo if "Account=" in line][0]
+        account = [el for el in account.split() if "Account=" in el][0].split("=")[1]
+        return account
+
+    def get_job_memory(self):
+        mem = [line for line in self.jobinfo if "mem=" in line][0]
+        mem = [el for el in mem.split(",") if "mem=" in el][0].split("=")[1]
+        return mem
+
+    def get_job_nodes(self):
+        node = [line for line in self.jobinfo if "NumNodes=" in line][0]
+        node = [el for el in node.split() if "NumNodes=" in el][0].split("=")[1]
+        return node
+
+    def get_job_timelimit(self):
+        time = [line for line in self.jobinfo if "TimeLimit=" in line][0]
+        time = [el for el in time.split() if "TimeLimit=" in el][0].split("=")[1]
+        return time
 
 
