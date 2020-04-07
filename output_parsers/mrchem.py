@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
-import time
 import os
+import sys
+sys.path.append(os.path.dirname(__file__))
+from helpers import splitjoin
 
 
 # Define the class MrchemOut, which will be MRChem output files.
@@ -115,15 +117,20 @@ class MrchemOut(object):
                 return int(line.split()[3])
 
     def scf_energy(self):
-        """Return a list of floats containing the SCF energies"""
-        # New version
-        e = []
+        """Return a list of floats containing the SCF energies, indeces, Mo residuaks
+           and updates"""
+        # Get SCF iterations
+        scf = []
         for i, line in enumerate(self.content):
-            if line.strip().startswith("Iter"):
+            if all([line.strip().startswith("Iter"),
+                    self.content[i-1].strip().startswith("=")]):
                 for cycle in self.content[i+2:]:
-                    if "---" in cycle or cycle == self.content[-1]:
-                        return e
-                    e.append((float(cycle.split()[1]), float(cycle.split()[2]), float(cycle.split()[3])))
+                    if cycle.strip().startswith("-"):
+                        break
+                    scf.append((cycle.split()[1:]))
+
+        mo, e, upd = zip(*scf)
+        return [float(i) for i in mo], [float(i) for i in e], [float(i) for i in upd]
 
     def plot_scf_energy(self, title=None):
         """Return a graph plotting the potential energies"""
@@ -131,7 +138,7 @@ class MrchemOut(object):
         prop_thrs = self.property_threshold()
         orb_thrs = self.orbital_threshold()
 
-        mo_residual, energies, updates = zip(*self.scf_energy())
+        mo_residual, energies, updates = self.scf_energy()
         xs = range(len(energies))
 
         property_thresholds = [prop_thrs for _x in xs]
@@ -152,7 +159,7 @@ class MrchemOut(object):
         ax2 = ax.twinx()
         ax2.plot(xs, energies, color="gray", linewidth=3, label="Total Energy", marker="o", markersize=4, mfc="black")
 
-        ax.set_ylabel("Energy [a.u]")
+        ax.set_ylabel("MO residual")
         ax2.set_ylabel("Energy [a.u]")
         ax.set_xlabel("SCF iteration")
         ax.set_yscale("log")
