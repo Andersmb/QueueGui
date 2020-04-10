@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 from collections import OrderedDict
 from datetime import datetime, timedelta
+import shutil
 import os
 import re
 import requests
@@ -14,11 +15,16 @@ import matplotlib.pyplot as plt
 from preferences import Preferences
 from toolbox import ToolBox
 from convertme import ConvertMe
+from job import Job
 import helpers
 
 from output_parsers.gaussian import GaussianOut
-from output_parsers.orca import OrcaOut, OrcaHess
+from output_parsers.orca import OrcaOut
 from output_parsers.mrchem import MrchemOut
+
+
+#TODO use the Job class get job info throughout the code
+
 
 
 class MainWindow(tk.Frame):
@@ -180,6 +186,10 @@ class MainWindow(tk.Frame):
                   text="ToolBox",
                   command=self.launch_toolbox,
                   font=self.parent.main_font).grid(row=0, column=4, pady=5, padx=5)
+        tk.Button(self.bot,
+                  text="Backup scratch",
+                  command=self.backup_scratch_files,
+                  font=self.parent.main_font).grid(row=0, column=6, pady=5, padx=5)
 
         # Option Menus
         optionmenu_jobhis_starttime = tk.OptionMenu(self.topleft, self.job_starttime, *self.job_starttime_options)
@@ -1166,8 +1176,6 @@ class MainWindow(tk.Frame):
 
         (gaussian, orca, mrchem)
         """
-        print(outputfile)
-
         with open(outputfile) as f:
             lines = f.readlines()[:100]
 
@@ -1175,21 +1183,88 @@ class MainWindow(tk.Frame):
             # Test if Gaussian
             if "Entering Gaussian System" in line.strip():
                 #self.log_update("Gaussian file detected")
+                self.parent.debug("Gaussian output detected")
                 return True, False, False
             # Test if ORCA
             elif "Directorship: Frank Neese" in line.strip():
                 #self.log_update("ORCA file detected")
+                self.parent.debug("ORCA output detected")
                 return False, True, False
             # Test if MRChem
             elif "Stig Rune Jensen" in line:
                 #self.log_update("MRChem file detected")
+                self.parent.debug("MRChem output detected")
                 return False, False, True
         else:
             self.log_update("Source of output not found. ErrorCode kux81")
             return "ErrorCode kux81"
 
     def update_job(self, event):
-        return UpdateJob(self, self.selected_text.get(), self.entry_user.get())
+        return UpdateJob(self, self.selected_text.get(), self.parent.user.get())
+
+    def backup_scratch_files(self):
+        """Copy all important files back to the workdir. This can be done if
+        there is danger of the job not completing within the timelimit."""
+        self.parent.debug("INITIATING BACKUP OF SCRATCH FILES", header=True)
+        pid = self.selected_text.get()
+
+        outputfile = self.locate_output_file(pid)
+        destination = os.path.join(self.master.tmp, os.path.basename(outputfile))
+        self.sftp_client.get(outputfile, destination)
+
+        G, O, M = self.determine_job_software(destination)
+
+        scratch = os.path.dirname(outputfile)
+        jobname = self.get_jobname(pid)
+        backup_dir = os.path.join(self.get_workdir(pid), f"{jobname}_backup")
+        self.log_update(f"Copying files to {backup_dir}")
+
+        # Test if backup dir exists, overwrite if it does
+        if helpers.is_remotedir(self.ssh_client, backup_dir):
+            self.ssh_client.exec_command(f"rm -r {backup_dir}")
+            self.ssh_client.exec_command(f"mkdir {backup_dir}")
+            self.parent.debug("Backup dir existed => overwrite")
+        else:
+            self.ssh_client.exec_command(f"mkdir {backup_dir}")
+            self.parent.debug("Backup dir did not exist.")
+
+        if G:
+            save_files = [".out", ".chk"]
+            self.parent.debug("Copying back Gaussian files")
+            for ext in save_files:
+                self.parent.debug(f"-> {ext} file")
+                src = os.path.join(scratch, jobname+ext)
+                cmd = f"cp {src} {backup_dir}"
+                stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+
+                if stderr:
+                    self.log_update(f"{ext}: stderr: {stderr.read().decode('ascii')}")
+                    self.parent.debug(f"-> stderr: {stderr.read().decode('ascii')}")
+
+        elif O:
+            save_files = [".out", ".gbw", ".xyz"]
+            self.parent.debug("Copying back ORCA files")
+            for ext in save_files:
+                self.parent.debug(f"-> {ext} file")
+                src = os.path.join(scratch, jobname + ext)
+                cmd = f"cp {src} {backup_dir}"
+                stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+
+                if stderr.read().decode("ascii").strip():
+                    self.log_update(f"{ext}: stderr: {stderr.read().decode('ascii')}")
+                    self.parent.debug(f"-> stderr: {stderr.read().decode('ascii')}")
+        else:
+            save_files = [".out"]
+            self.parent.debug("Copying back MRChem files")
+            for ext in save_files:
+                self.parent.debug(f"-> {ext} file")
+                src = os.path.join(scratch, jobname + ext)
+                cmd = f"cp {src} {backup_dir}"
+                stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+
+                if stderr:
+                    self.log_update(f"{ext}: stderr: {stderr.read().decode('ascii')}")
+                    self.parent.debug(f"-> stderr: {stderr.read().decode('ascii')}")
 
 
 class UpdateJob(tk.Toplevel):
@@ -1198,12 +1273,10 @@ class UpdateJob(tk.Toplevel):
         self.parent = parent
         self.pid = pid
         self.user = user
-
-        self.ssh_client = self.parent.ssh_client
-        self.jobinfo = self.parent.get_jobinfo(self.pid).splitlines()
+        self.job = Job(self.parent.ssh_client, self.pid)
 
         self.account = tk.StringVar()
-        self.account.set(self.get_job_account())
+        self.account.set(self.job.get_info("Account"))
 
         self.frame = tk.Frame(self)
         self.frame.grid(row=0, column=0)
@@ -1231,9 +1304,9 @@ class UpdateJob(tk.Toplevel):
         self.e_time.grid(row=3, column=1, sticky=tk.W)
         self.e_node.grid(row=4, column=1, sticky=tk.W)
 
-        self.e_mem.insert(0, self.get_job_memory())
-        self.e_time.insert(0, self.get_job_timelimit())
-        self.e_node.insert(0, self.get_job_nodes())
+        self.e_mem.insert(0, self.job.get_info("MinMemoryNode"))
+        self.e_time.insert(0, self.job.get_info("TimeLimit"))
+        self.e_node.insert(0, self.job.get_info("Nodes"))
 
     def update(self):
         self.parent.log_update(f"Updating job {self.pid}")
@@ -1245,7 +1318,7 @@ class UpdateJob(tk.Toplevel):
                 f"scontrol update jobid {self.pid} minmemorynode {self.e_mem.get()}"]
 
         for cmd in cmds:
-            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+            stdin, stdout, stderr = self.parent.ssh_client.exec_command(cmd)
             err = stderr.read().decode('ascii').strip()
             self.parent.log_update(f"...command: {cmd}")
             self.parent.log_update(f"...stderr: {err}")
@@ -1256,14 +1329,14 @@ class UpdateJob(tk.Toplevel):
     def get_all_accounts(self):
         self.parent.parent.debug(f"Getting active accounts for user={self.user}", header=True)
         host = self.parent.parent.host.get()
-        pattern = re.compile(r"[a-zA-Z]{2}[0-9]{4}k")  # This will match al accunts at uninett
+        pattern = re.compile(r"[a-zA-Z]{2}[0-9]{4}k")  # This will match all accounts at uninett
 
         if host == "stallo":
             cmd = "/global/apps/gold/2.1.5.0/bin/cost"
             self.parent.parent.debug(f"...command to send: {cmd}")
 
-            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
-            self.parent.parent.debug("...command sent to Stallo")
+            stdin, stdout, stderr = self.parent.ssh_client.exec_command(cmd)
+            self.parent.parent.debug("...command sent to cluster")
             output = stdout.read().decode("ascii")
 
             self.parent.parent.debug(f"...RE pattern: {pattern}")
@@ -1276,34 +1349,13 @@ class UpdateJob(tk.Toplevel):
             cmd = "/cluster/bin/cost"
             self.parent.parent.debug(f"Command to send: {cmd}")
 
-            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
-            self.parent.parent.debug("...command sent to Stallo")
+            stdin, stdout, stderr = self.parent.ssh_client.exec_command(cmd)
+            self.parent.parent.debug("...command sent to cluster")
             output = stdout.read().decode("ascii")
+            print("output", output)
 
             self.parent.parent.debug(f"...RE pattern: {pattern}")
 
             accounts = set(pattern.findall(output))
             self.parent.parent.debug(f"...matched user accounts: {', '.join(accounts)}")
             return list(accounts)
-
-    def get_job_account(self):
-        account = [line for line in self.jobinfo if "Account=" in line][0]
-        account = [el for el in account.split() if "Account=" in el][0].split("=")[1]
-        return account
-
-    def get_job_memory(self):
-        mem = [line for line in self.jobinfo if "mem=" in line][0]
-        mem = [el for el in mem.split(",") if "mem=" in el][0].split("=")[1]
-        return mem
-
-    def get_job_nodes(self):
-        node = [line for line in self.jobinfo if "NumNodes=" in line][0]
-        node = [el for el in node.split() if "NumNodes=" in el][0].split("=")[1]
-        return node
-
-    def get_job_timelimit(self):
-        time = [line for line in self.jobinfo if "TimeLimit=" in line][0]
-        time = [el for el in time.split() if "TimeLimit=" in el][0].split("=")[1]
-        return time
-
-
