@@ -67,3 +67,21 @@ def purify_path(path):
     first = path.split("/")[1]
     rest = path.split("/")[2:]
     return os.path.join("/"+first, *rest)
+
+
+def is_remotefile(ssh_client, f):
+    cmd = f"test -f {f} && echo 1 || echo 0"
+    stdin, stdout, stderr = ssh_client.exec_command(cmd)
+    if stdout.read().decode("ascii").strip() == "1":
+        return True
+    else:
+        return False
+
+
+def is_remotedir(ssh_client, d):
+    cmd = f"test -d {d} && echo 1 || echo 0"
+    stdin, stdout, stderr = ssh_client.exec_command(cmd)
+    if stdout.read().decode("ascii").strip() == "1":
+        return True
+    else:
+        return False
