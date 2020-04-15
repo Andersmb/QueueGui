@@ -31,6 +31,7 @@ class MainWindow(tk.Frame):
     def __init__(self, parent, **kwargs):
         tk.Frame.__init__(self, parent, **kwargs)
         self.parent = parent
+        self.winfo_toplevel().title(f"QueueGui: <{self.parent.user.get()}@{self.parent.cluster_data[self.parent.host.get()]['hostname']}>")
 
         # Define variables
         self.do_queue_monitoring = tk.BooleanVar()
@@ -41,6 +42,7 @@ class MainWindow(tk.Frame):
         self.jobhisfilter = tk.StringVar()
         self.job_starttime = tk.StringVar()
         self.selected_text = tk.StringVar()
+        self.current_file = tk.StringVar()
         self.url_readme = "https://raw.githubusercontent.com/Andersmb/QueueGui/master/README.md"
 
         # We have to once again establish the connection to the remote cluster
@@ -189,6 +191,10 @@ class MainWindow(tk.Frame):
         tk.Button(self.bot,
                   text="Backup scratch",
                   command=self.backup_scratch_files,
+                  font=self.parent.main_font).grid(row=0, column=5, pady=5, padx=5)
+        tk.Button(self.bot,
+                  text="Update curr. file",
+                  command=self.update_current_file,
                   font=self.parent.main_font).grid(row=0, column=6, pady=5, padx=5)
 
         # Option Menus
@@ -237,10 +243,11 @@ class MainWindow(tk.Frame):
                                         bg=self.master.background_color.get())
         self.label_monitor_q.grid(row=4, column=1)
 
-        # Label for displaying the username and hostname
-        tk.Label(self.bot,
-                 text=f"<{self.parent.user.get()}@{self.parent.cluster_data[self.parent.host.get()]['hostname']}>",
-                 bg=self.master.background_color.get()).grid(row=0, column=5, pady=5, padx=5)
+        # Current file
+        tk.Label(self.topleft,
+                 textvar=self.current_file,
+                 bg=self.master.background_color.get(),
+                 font=self.parent.main_font).grid(row=5, column=0, columnspan=3, pady=5, padx=5)
 
         # Check buttons
         tk.Checkbutton(self.topleft,
@@ -268,7 +275,7 @@ class MainWindow(tk.Frame):
                            bg="black",
                            fg="white")
         self.txt.grid(row=0, column=0, sticky="nsew", pady=5, padx=5)
-        self.txt.config(font=self.parent.queue_font)
+        self.txt.config(font=self.parent.queue_font, insertbackground='white')
 
         self.log = tk.Text(self.topright,
                            yscrollcommand=log_yscrollbar.set,
@@ -349,6 +356,8 @@ class MainWindow(tk.Frame):
         return Preferences(self)
 
     def show_user_manual(self):
+        self.current_file.set("")
+        self.current_file.set("")
         with requests.session() as s:
             readme = s.get(self.url_readme).content.decode('utf-8')
 
@@ -428,6 +437,7 @@ class MainWindow(tk.Frame):
         :param args: Event from keyboard combination
         :return:
         """
+        self.current_file.set("")
         self.user.set(self.entry_user.get())
         self.status.set(self.status_options[self.status.get()])
 
@@ -706,6 +716,7 @@ class MainWindow(tk.Frame):
         in a table.
         :return:
         """
+        self.current_file.set("")
         cmd = "squeue -o '%u %C %t'"
         stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
         q = stdout.readlines()
@@ -879,6 +890,7 @@ class MainWindow(tk.Frame):
         return "ErrorCode_juq81"
 
     def open_output(self, *args):
+        self.current_file.set("")
         self.parent.debug(f"OPENING OUTPUT FILE", header=True)
         pid = self.selected_text.get()
         outputfile = self.locate_output_file(pid)
@@ -970,6 +982,7 @@ class MainWindow(tk.Frame):
     def open_input(self, *args):
         self.parent.debug(f"OPENING INPUT FILE", header=True)
         inputfile = self.locate_input_file()
+        self.current_file.set(inputfile)
         if "ErrorCode_" in inputfile:
             return inputfile
 
@@ -993,9 +1006,12 @@ class MainWindow(tk.Frame):
         # Locate the submit script file. Common extensions are "job" and "launch"
         slurmscript_extensions = [".job", ".launch"]
         for ext in slurmscript_extensions:
+            jobfile = helpers.remote_join(workdir, jobname+ext)
+            self.current_file.set(jobfile)
             try:
-                with self.sftp_client.open(helpers.remote_join(workdir, jobname+ext)) as f:
+                with self.sftp_client.open(jobfile) as f:
                     content = f.read()
+                    self.log_update("Opening {}".format(jobfile))
                     self.txt.configure(state=tk.NORMAL)
                     self.txt.delete(1.0, tk.END)
                     self.txt.insert(1.0, content)
@@ -1006,6 +1022,7 @@ class MainWindow(tk.Frame):
                     return "ErrorCode_juq91"
 
     def open_jobinfo(self):
+        self.current_file.set("")
         pid = self.selected_text.get()
         jobinfo = self.get_jobinfo(pid)
 
@@ -1015,6 +1032,7 @@ class MainWindow(tk.Frame):
         self.txt.insert(tk.END, jobinfo)
 
     def filter_textbox(self, *args):
+        self.current_file.set("")
         self.jobhisfilter.set(self.entry_filter.get())
         if self.jobhisfilter.get().strip() == "":
             return self.log_update("The filter is empty")
@@ -1265,6 +1283,19 @@ class MainWindow(tk.Frame):
                 if stderr:
                     self.log_update(f"{ext}: stderr: {stderr.read().decode('ascii')}")
                     self.parent.debug(f"-> stderr: {stderr.read().decode('ascii')}")
+
+    def update_current_file(self):
+        if messagebox.askyesno("Update file contents",
+                               f"Do you want to update the contents of the current file? This cannot be undone! Current file: {self.current_file.get()}"):
+            contents = self.txt.get("1.0", tk.END).splitlines()
+            cmds = [f"echo '{line}' >> {self.current_file.get()}" for line in contents]
+            rm = f"rm {self.current_file.get()}"
+
+            self.ssh_client.exec_command(rm)
+            for cmd in cmds:
+                self.ssh_client.exec_command(cmd)
+
+            self.log_update(f"Updated {self.current_file.get()}")
 
 
 class UpdateJob(tk.Toplevel):
