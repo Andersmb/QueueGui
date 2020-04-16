@@ -1,5 +1,3 @@
-
-
 class Job:
     def __init__(self, ssh_client=None, pid=None):
         """
