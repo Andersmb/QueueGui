@@ -340,11 +340,11 @@ class ToolBox(tk.Toplevel):
                 v = mode[i]
 
                 c_new = [labels[i],
-                         self.parent.master.AU2ANG * (c[0] + scale * v[0]),
-                         self.parent.master.AU2ANG * (c[1] + scale * v[1]),
-                         self.parent.master.AU2ANG * (c[2] + scale * v[2])]
+                         f"{self.parent.master.AU2ANG * (c[0] + scale * v[0]):.6f}",
+                         f"{self.parent.master.AU2ANG * (c[1] + scale * v[1]):.6f}",
+                         f"{self.parent.master.AU2ANG * (c[2] + scale * v[2]):.6f}"]
 
-                geom_displaced.append(map(str, c_new))
+                geom_displaced.append(c_new)
 
             with open(output, "w") as f:
                 f.write(f"{len(geom)}\n")
