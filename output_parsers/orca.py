@@ -224,18 +224,15 @@ class OrcaOut(object):
         else:
             raise BadTermination("Possibly bad termination. Check output file!")
 
-    def bsse(self, var):
+    def cmp_var(self, var):
         """
-        Return the BSSE in atomic units. Assumes that the Compound feature has been used, and that
-        the computed BSSE has been stored in a variable that can be accessed at the end of the output.
-        :param var: name or ORCA variable used for storing BSSE
+        Return the value of the given compound job variable name as a float.
+        :param var:
         :return:
         """
-        content = list(reversed(self.content))
-        for i, line in enumerate(content):
-            if line.strip().startswith("Variable Name") and line.split()[-1] == var.upper():
-                if content[i-13].strip().startswith("Value"):
-                    return float(content[i-13].split()[-1])
+        for line in reversed(self.content):
+            if line.strip().lower().startswith(var.lower()):
+                return float(line.split()[2])
         else:
             raise BadTermination("Possibly bad termination. Check output file!")
 
