@@ -255,9 +255,8 @@ class OrcaOut(object):
         """
         c = []
         for line in self.content:
-            if "%Pal NProcs" in line:
-                c.append(int(line.split()[4]))
-        return c
+            if "%pal nprocs" in line.lower():
+                return int(line.split()[4])
 
 
 class OrcaHess(object):
