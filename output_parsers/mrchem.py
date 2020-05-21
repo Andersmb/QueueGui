@@ -24,10 +24,12 @@ class MrchemOut(object):
         """This method evaluates whether the job
         terminated normally, and returns a Boolean:
         True if termination was normal, False if not."""
-        try:
-            if "Exiting MRChem" in self.content[-7]:
+        for line in reversed(self.content):
+            if "SCF did NOT converge!!!" in line:
+                return False
+            if "Exiting MRChem" in line:
                 return True
-        except IndexError:
+        else:
             return False
 
     def dipole_norm_debye(self):
