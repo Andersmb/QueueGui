@@ -43,6 +43,7 @@ class MainWindow(tk.Frame):
         self.job_starttime = tk.StringVar()
         self.selected_text = tk.StringVar()
         self.current_file = tk.StringVar()
+        self.output_last_update = tk.StringVar()
         self.url_readme = "https://raw.githubusercontent.com/Andersmb/QueueGui/master/README.md"
 
         # We have to once again establish the connection to the remote cluster
@@ -166,6 +167,10 @@ class MainWindow(tk.Frame):
                   text="SCF converg.",
                   command=self.mrchem_plot_convergence,
                   font=self.parent.main_font).grid(row=3, column=3, pady=5, padx=5, sticky="ew")
+        tk.Button(self.topright,
+                  text="Open .err",
+                  command=self.open_error,
+                  font=self.parent.main_font).grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
         tk.Button(self.bot,
                   text="Quit",
                   command=self.master.destroy,
@@ -235,6 +240,12 @@ class MainWindow(tk.Frame):
                                             text="<Selected PID goes here>",
                                             bg=self.master.background_color.get(),
                                             font=self.parent.main_font)
+        self.label_output_last_update = tk.Label(self.topleft,
+                                                 justify=tk.LEFT,
+                                                 textvariable=self.output_last_update,
+                                                 bg=self.master.background_color.get(),
+                                                 font=self.parent.main_font).grid(row=4, column=3)
+
         self.label_selected_text.grid(row=4, column=0)
         self.label_selected_text.bind("<Button-2>", self.update_job)
 
@@ -342,6 +353,9 @@ class MainWindow(tk.Frame):
             if s_new != s_old:
                 self.selected_text.set(s_new)
                 self.label_selected_text["text"] = f"Last selected job: {s_new}"
+
+                outputfile = self.locate_output_file(s_new)
+                self.output_last_update.set(self.get_last_update(outputfile))
         except (ValueError, TypeError):
             pass
 
@@ -354,6 +368,11 @@ class MainWindow(tk.Frame):
         :return:
         """
         return Preferences(self)
+
+    def get_last_update(self, f):
+        cmd = f"ls -ltr {f}"
+        _, stdout, _ = self.ssh_client.exec_command(cmd)
+        return stdout.read().decode("ascii").split()[5:8]
 
     def show_user_manual(self):
         self.current_file.set("")
@@ -978,6 +997,22 @@ class MainWindow(tk.Frame):
 
         self.log_update("Scratch not found. ErrorCode_lib73")
         return "ErrorCode_lib73"
+
+    def open_error(self):
+        self.parent.debug("OPENING ERROR FILE", header=True)
+        errorfile = self.locate_input_file().split(".")[0]+".err"
+        if "ErrorCode_" in errorfile:
+            return errorfile
+
+        with self.sftp_client.open(errorfile) as f:
+            lines = f.readlines()
+
+        self.log_update(f"Opening {errorfile}")
+        self.txt.config(state=tk.NORMAL)
+        self.txt.delete(1.0, tk.END)
+
+        for line in lines:
+            self.txt.insert(tk.END, line)
 
     def open_input(self, *args):
         self.parent.debug(f"OPENING INPUT FILE", header=True)
