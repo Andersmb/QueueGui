@@ -24,7 +24,7 @@ class MrchemOut(object):
         """This method evaluates whether the job
         terminated normally, and returns a Boolean:
         True if termination was normal, False if not."""
-        for line in reversed(self.content):
+        for line in self.content:
             if "SCF did NOT converge!!!" in line:
                 return False
             if "Exiting MRChem" in line:
