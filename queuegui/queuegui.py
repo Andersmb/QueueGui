@@ -1,4 +1,8 @@
+# TODO Setup up password storage for HPC clusters once. Then log in by clicking on the cluster name
+
+
 import tkinter as tk
+from PIL import Image, ImageTk
 from tkinter import font
 from tkinter import messagebox
 import os
@@ -12,6 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from mainwindow import MainWindow
 from login import Login
+
 
 ####################
 DEV = False
@@ -28,6 +33,15 @@ class QueueGui(tk.Tk):
         self.do_debug = tk.BooleanVar()
         self.rootdir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
+        # Image files
+        self.dir_img = os.path.join(self.rootdir, "img")
+        self.photos = {
+            "stallo": ImageTk.PhotoImage(Image.open(os.path.join(self.dir_img, "stallo_small.png"))),
+            "fram": ImageTk.PhotoImage(Image.open(os.path.join(self.dir_img, "fram_small.png"))),
+            "saga": ImageTk.PhotoImage(Image.open(os.path.join(self.dir_img, "saga_small.png"))),
+            "betzy": ImageTk.PhotoImage(Image.open(os.path.join(self.dir_img, "betzy_small.png")))
+        }
+
         # Define constants for conversions
         self.AU2ANG = 0.529177249
         self.ANG2AU = 1 / self.AU2ANG
@@ -35,6 +49,9 @@ class QueueGui(tk.Tk):
         self.KCAL2AU = 1 / self.AU2KCAL
 
         # Define system variables and set defaults where relevant
+        self.firstlogin = tk.BooleanVar()
+        self.firstlogin.set(True)
+
         self.user = tk.StringVar()
         self.pwd = tk.StringVar()
         self.host = tk.StringVar()  # Coupled to OptionMenu in Login
@@ -57,6 +74,10 @@ class QueueGui(tk.Tk):
             "saga": {
                 "hostname": "saga.sigma2.no",
                 "number_of_cpus": float(9824)
+            },
+            "betzy": {
+                "hostname": "betzy.sigma2.no",
+                "number_of_cpus": float(172032)
             }
         }
 

@@ -1,9 +1,14 @@
 import tkinter as tk
+from tkinter import simpledialog, messagebox
 import paramiko as pmk
+import os
+import sys
 
 import helpers
 from toolbox import ToolBox
 from convertme import ConvertMe
+
+dir_img = os.path.join(os.path.dirname(os.path.dirname(__file__)), "img")
 
 
 class Login(tk.Frame):
@@ -15,75 +20,60 @@ class Login(tk.Frame):
         """
         tk.Frame.__init__(self, parent, **kwargs)
         self.parent = parent
-        self.pady = 2
-        self.padx = 0
+        self.pady = 5
+        self.padx = 5
 
         # Set the ssh client
         self.ssh_client = pmk.SSHClient()
         self.ssh_client.set_missing_host_key_policy(pmk.AutoAddPolicy())
 
-        # Store hostname options and set default
-        self.host_options = ["stallo", "fram", "saga"]
-        self.parent.host.set(self.host_options[0])
-
         # Define and place widgets
-        # Buttons
-        tk.Button(self, text="Log in", fg="green", command=self.authorize).grid(row=3, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
-        tk.Button(self, text="ToolBox", fg="blue", command=self.launch_toolbox).grid(row=5, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
-        tk.Button(self, text="ConvertMe", fg="blue", command=self.launch_convertme).grid(row=6, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
-        tk.Button(self, text="Quit", fg="red", command=self.quit).grid(row=99, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
+        for i, cluster in enumerate(self.parent.photos.keys()):
+            login_cmd = lambda cluster=cluster: self.authorize(cluster)
+            tk.Button(self,
+                      image=self.parent.photos[cluster],
+                      width=100,
+                      height=100,
+                      command=login_cmd).grid(row=0, column=i, pady=self.pady, padx=self.padx)
+            tk.Label(self,
+                     text=cluster.upper()).grid(row=1, column=i)
 
+    def authorize(self, cluster):
+        self.parent.host.set(cluster)
+        hostname = self.parent.cluster_data[cluster]["hostname"]
+        if self.parent.firstlogin.get():
+            user = tk.simpledialog.askstring("", "Username: ")
+            pwd = tk.simpledialog.askstring("", "Password: ", show="*")
+            self.send_credentials(hostname, user, pwd)
 
-        # Labels
-        tk.Label(self, text="Username: ").grid(row=0, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
-        tk.Label(self, text="Password: ").grid(row=1, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
-        tk.Label(self, text="Hostname: ").grid(row=2, column=0, sticky=tk.W, pady=self.pady, padx=self.padx)
-        tk.Label(self, text="Tip: Press <Control-c> to circle hostnames", font=("", 10)).grid(row=3, column=1, pady=self.pady, padx=self.padx)
+            self.parent.user.set(user)
+            self.parent.pwd.set(pwd)
 
-        # Option Menus
-        tk.OptionMenu(self, self.parent.host, *self.host_options).grid(row=2, column=1, sticky=tk.W, pady=self.pady, padx=self.padx)
-
-        # Text entries
-        self.entry_user = tk.Entry(self)
-        self.entry_user.focus_set()
-        self.entry_pwd = tk.Entry(self, show="*")
-
-        self.entry_user.grid(row=0, column=1, sticky=tk.W, pady=self.pady, padx=self.padx)
-        self.entry_pwd.grid(row=1, column=1, sticky=tk.W, pady=self.pady, padx=self.padx)
-
-        # Bind the return key for easier login
-        self.entry_pwd.bind("<Return>", self.authorize)
-
-        # Get a modulo loop generator for looping over possible host names for easier login
-        host_el_gen = helpers.modulo_generator(length=1500, mod=len(self.host_options))
-        next(host_el_gen)  # Get rid of first element, since that is the same as default hostname
-
-        # Bind keyboard combination to change the host name for logging in
-        self.parent.bind("<Control-c>", lambda event: self.parent.host.set(self.host_options[next(host_el_gen)]))
-        self.parent.bind("<Return>", self.authorize)
-
-    def authorize(self, *args):
-        """
-        Attempt to log in by submitting the credentials
-        :param args: the event will be passed when <Return> is pressed
-        :return:
-        """
-        self.parent.pwd.set(self.entry_pwd.get())
-        self.parent.user.set(self.entry_user.get())
-        hostname = self.parent.cluster_data[self.parent.host.get()]["hostname"]
-
-        try:
-            self.ssh_client.connect(hostname=hostname, username=self.parent.user.get(), password=self.entry_pwd.get())
-            self.entry_pwd.delete(0, tk.END)
+            self.parent.show_main()
+        else:
+            self.send_credentials(hostname, self.parent.user.get(), self.parent.pwd.get())
             self.parent.show_main()
 
-        except pmk.AuthenticationException:
-            l_error = tk.Label(self, text="Login failed...", fg="red")
-            l_error.grid(row=4, column=1, sticky=tk.W)
-            l_error.after(5000, l_error.destroy)
+    def send_credentials(self, hostname, user, pwd):
+        try:
+            self.ssh_client.connect(hostname=hostname, username=user, password=pwd)
+            self.parent.firstlogin.set(False)
+        except pmk.ssh_exception.AuthenticationException:
+            tk.messagebox.showerror("Error", f"Login to {hostname.split('.')[0]} failed:\nIncorrect username or password.")
 
-    def launch_toolbox(self):
-        return ToolBox(self)
 
-    def launch_convertme(self):
-        return ConvertMe(self)
+class InitialLogin(tk.Toplevel):
+    def __init__(self, parent, cluster):
+        tk.Toplevel.__init__(self, parent)
+        self.cluster = cluster
+
+        self.frame = tk.Frame(self)
+        self.frame.grid(row=0, column=0)
+
+        tk.Label(self.frame, text="Username: ").grid(row=0, column=0, sticky=tk.E)
+        tk.Label(self.frame, text="Password: ").grid(row=1, column=0, sticky=tk.E)
+        self.entry_user = tk.Entry(self.frame)
+        self.entry_user.grid(row=0, column=1, sticky=tk.W)
+        self.entry_pwd = tk.Entry(self.frame)
+        self.entry_pwd.grid(row=1, column=1, sticky=tk.W)
+
