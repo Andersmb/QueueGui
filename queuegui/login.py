@@ -60,20 +60,3 @@ class Login(tk.Frame):
             self.parent.firstlogin.set(False)
         except pmk.ssh_exception.AuthenticationException:
             tk.messagebox.showerror("Error", f"Login to {hostname.split('.')[0]} failed:\nIncorrect username or password.")
-
-
-class InitialLogin(tk.Toplevel):
-    def __init__(self, parent, cluster):
-        tk.Toplevel.__init__(self, parent)
-        self.cluster = cluster
-
-        self.frame = tk.Frame(self)
-        self.frame.grid(row=0, column=0)
-
-        tk.Label(self.frame, text="Username: ").grid(row=0, column=0, sticky=tk.E)
-        tk.Label(self.frame, text="Password: ").grid(row=1, column=0, sticky=tk.E)
-        self.entry_user = tk.Entry(self.frame)
-        self.entry_user.grid(row=0, column=1, sticky=tk.W)
-        self.entry_pwd = tk.Entry(self.frame)
-        self.entry_pwd.grid(row=1, column=1, sticky=tk.W)
-
