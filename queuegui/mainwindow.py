@@ -327,6 +327,17 @@ class MainWindow(tk.Frame):
         self.parent.bind("<Control-p>", self.launch_preferences)
         self.parent.bind("<Control-l>", self.logout)
 
+        # Bind keyboard shortcuts for quickly switching between clusters, using number buttons
+        # (The numbers correspond to the cluster ordering in Login)
+        self.parent.bind("<Control-Key-1>", lambda event: self.switch_cluster("stallo", event))  # Stallo
+        self.parent.bind("<Control-Key-2>", lambda event: self.switch_cluster("fram", event))  # Fram
+        self.parent.bind("<Control-Key-3>", lambda event: self.switch_cluster("saga", event))  # Saga
+        self.parent.bind("<Control-Key-4>", lambda event: self.switch_cluster("betzy", event))  # Betzy
+
+    def switch_cluster(self, cluster, *args):
+        self.destroy()
+        self.parent.login_window.authorize(cluster)
+
     def logout(self, *args):
         """
         Close ssh connection and show the Login window.
