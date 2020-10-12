@@ -167,10 +167,14 @@ class MainWindow(tk.Frame):
                   text="SCF converg.",
                   command=self.mrchem_plot_convergence,
                   font=self.parent.main_font).grid(row=3, column=3, pady=5, padx=5, sticky="ew")
-        tk.Button(self.topright,
+        tk.Button(self.topleft,
                   text="Open .err",
                   command=self.open_error,
-                  font=self.parent.main_font).grid(row=4, column=0, padx=5, pady=5, sticky=tk.W)
+                  font=self.parent.main_font).grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+        tk.Button(self.topleft,
+                  text="MRC CHK",
+                  command=self.store_mrchem_checkpoint,
+                  font=self.parent.main_font).grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
         tk.Button(self.bot,
                   text="Quit",
                   command=self.master.destroy,
@@ -1343,6 +1347,43 @@ class MainWindow(tk.Frame):
 
             self.log_update(f"Updated {self.current_file.get()}")
 
+    def store_mrchem_checkpoint(self):
+        pid = self.selected_text.get()
+        jobname = self.get_jobname(pid)
+        scratch = os.path.dirname(self.locate_output_file(pid))
+        workdir = self.get_workdir(pid)
+        source = os.path.join(scratch, "checkpoint")
+        destination = f"/cluster/work/users/ambr/MWcheckpoints_{pid}"
+        pointer = os.path.join(workdir, jobname+".checkpoint")
+
+        cmd_dush = f"du -sh {source}"
+        cmd_touch = f"touch {pointer}; echo {destination} > {pointer}"
+        cmd_mkdir = f"mkdir -p {destination}"
+        cmd_copy = f"cp {source}/* {destination}/"
+
+        stdin, stdout, stderr = self.ssh_client.exec_command(cmd_dush)
+        dush = stdout.read().decode("ascii").strip()
+        self.log_update(f"Orbital size: {dush}")
+
+        self.log_update("Touching checkpoint pointer:")
+        stdin, stdout, stderr = self.ssh_client.exec_command(cmd_touch)
+        self.log_update(f"stderr: {stderr.read().decode('ascii').strip()}")
+
+        self.log_update("Creating CHK directory")
+        stdin, stdout, stderr = self.ssh_client.exec_command(cmd_mkdir)
+        self.log_update(f"stderr: {stderr.read().decode('ascii').strip()}")
+
+        self.log_update("Copying orbital checkpoints:")
+        stdin, stdout, stderr = self.ssh_client.exec_command(cmd_copy)
+        self.log_update(f"stderr: {stderr.read().decode('ascii').strip()}")
+        self.log_update("Checkpointing done!")
+
+        # Make OSX notification
+        if "darwin" in self.parent.platform:
+            cmd_msg = f"osascript -e 'display notification \"Copied orbitals ({dush})\" with title \"QG CHECKPOINTING\"'"
+            os.system(cmd_msg)
+
+        return
 
 class UpdateJob(tk.Toplevel):
     def __init__(self, parent, pid, user):
