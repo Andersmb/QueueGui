@@ -32,6 +32,7 @@ class QueueGui(tk.Tk):
         self.name = "QueueGui3_DEV" if DEV else "QueueGui3"
         self.do_debug = tk.BooleanVar()
         self.rootdir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+        self.platform = sys.platform
 
         # Image files
         self.dir_img = os.path.join(self.rootdir, "img")
