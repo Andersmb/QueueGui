@@ -331,12 +331,55 @@ class MainWindow(tk.Frame):
         self.parent.bind("<Control-p>", self.launch_preferences)
         self.parent.bind("<Control-l>", self.logout)
 
+        # Bind shortcut for opening a textbox dialog for entering simple shell commands that
+        # will be passed to the cluster
+        self.parent.bind("<Shift-Return>", self.shellmulator)
+
         # Bind keyboard shortcuts for quickly switching between clusters, using number buttons
         # (The numbers correspond to the cluster ordering in Login)
         self.parent.bind("<Control-Key-1>", lambda event: self.switch_cluster("stallo", event))  # Stallo
         self.parent.bind("<Control-Key-2>", lambda event: self.switch_cluster("fram", event))  # Fram
         self.parent.bind("<Control-Key-3>", lambda event: self.switch_cluster("saga", event))  # Saga
         self.parent.bind("<Control-Key-4>", lambda event: self.switch_cluster("betzy", event))  # Betzy
+
+    def shellmulator(self, *args):
+        # Dangerous to use certain commands remotely, so we forbid them
+        # (not perfect, but it adds a slight safeguard against thoughtless commands
+        forbidden_commands = ["rm ", "mv ", "mkdir ", "cp ", "rmdir "]
+
+        def send_command(widget):
+            cmd = entry.get()
+            if any([cmd.startswith(c) for c in forbidden_commands]):
+                MSG = """
+                 mmmmmm  mmmm  mmmmm  mmmmm  mmmmm  mmmm   mmmm   mmmmmm mm   m
+                 #      m"  "m #   "# #    #   #    #   "m #   "m #      #"m  #
+                 #mmmmm #    # #mmmm" #mmmm"   #    #    # #    # #mmmmm # #m #
+                 #      #    # #   "m #    #   #    #    # #    # #      #  # #
+                 #       #mm#  #    " #mmmm" mm#mm  #mmm"  #mmm"  #mmmmm #   ##
+                """
+                self.txt.delete("1.0", tk.END)
+                self.txt.insert(tk.END, MSG)
+                widget.destroy()
+            stdin, stdout, stderr = self.ssh_client.exec_command(cmd)
+            if stderr.read():
+                error = stderr.read().decode("ascii")
+                self.log_update(f"Error!")
+                self.log_update(error)
+            else:
+                self.txt.delete(1.0, tk.END)
+                self.txt.insert(tk.END, f"$ {cmd}\n")
+                self.txt.insert(tk.END, stdout.read().decode("ascii"))
+
+                widget.destroy()
+
+        t = tk.Toplevel(self)
+        t.bind("<Return>", lambda event: send_command(t))
+
+        f = tk.Frame(t)
+        f.grid(row=0, column=0)
+        entry = tk.Entry(f)
+        entry.grid(row=0, column=0)
+        entry.focus()
 
     def switch_cluster(self, cluster, *args):
         self.destroy()
