@@ -11,8 +11,12 @@ class OrcaOut(object):
         self.filename = filename
 
         with open(self.filename) as f:
-            self.source = f.read()
-            self.content = self.source.splitlines()
+            try:
+                self.source = f.read()
+                self.content = self.source.splitlines()
+            except UnicodeDecodeError:
+                self.source = "Error! Output file could not be parsed due to UnicodeDecodeError. Probably unicode characters in the output file"
+                self.content = ["Error! Output file could not be parsed due to UnicodeDecodeError. Probably unicode characters in the output file"]
 
     def __repr__(self):
         return "<OrcaOut(filename={})>".format(self.filename)
