@@ -31,6 +31,29 @@ class OrcaOut(object):
 
         return [[helpers.splitjoin(atom) for atom in geom] for geom in traj]
 
+    def no_atoms(self):
+        """
+        Return the number of atoms.
+        :return: int
+        """
+        inputfile = [line.split(">")[-1].strip() for line in self.content if line.strip().startswith("|")]
+        xyz = []
+        for i, line in enumerate(inputfile):
+            if "".join(line.split()).startswith("*xyz"):
+                for subline in inputfile[i:]:
+                    if subline == "*":
+                        return len(xyz)
+                    else:
+                        xyz.append(subline.split())
+
+    def no_electrons(self):
+        """Return the number of electrons.
+        :return: int
+        """
+        for line in self.content:
+            if line.strip().startswith("Number of Electrons"):
+                return int(line.split()[5])
+
     def source(self):
         """Return the file content as a string."""
         with open(self.filename, "r") as f:
@@ -43,7 +66,25 @@ class OrcaOut(object):
         if self.content[-1].strip().startswith("TOTAL RUN TIME:"):
             return True
         return False
-    
+
+    def charge(self):
+        """
+        Return the charge of the system.
+        :return:
+        """
+        for line in self.content:
+            if "Total Charge" in line.strip():
+                return int(line.split()[4])
+
+    def multiplicity(self):
+        """
+        Return the multiplicity of the system.
+        :return:
+        """
+        for line in self.content:
+            if "Multiplicity" in line.strip():
+                return int(line.split()[3])
+
     def scf_energy(self):
         """Return a list of floats containing the optimized SCF energies.
         Note that these values INCLUDE the dispersion correction if present."""
@@ -60,12 +101,6 @@ class OrcaOut(object):
         w = [line for line in self.content if line.strip().startswith("TOTAL RUN TIME:")][0].split()
         return float(w[3])*86400 + float(w[5])*3600 + float(w[7])*60 + float(w[9]) + float(w[11])/1000
 
-    def no_atoms(self):
-        """Return the number of atoms of the system (integer)"""
-        for line in self.content:
-            if line.strip().startswith("Number of atoms"):
-                return int(line.strip().split()[-1])
-             
     def no_geomcycles(self):
         """Return the number of geometry cycles needed for convergence. Return an integer."""
         return len(self.geometry_trajectory())
@@ -152,6 +187,24 @@ class OrcaOut(object):
         for line in self.content:
             if line.split()[:4] == ["1-El.", "energy", "change", "...."]:
                 return float(line.split()[4])
+
+    def normal_mode_frequencies(self):
+        """
+        Return the vibrational frequencies
+        :return: list
+        """
+        f = []
+        for i, line in enumerate(self.content):
+            if line.strip().startswith("VIBRATIONAL FREQUENCIES"):
+                for subline in self.content[i+5:]:
+                    if not subline.strip() == "":
+                        f.append(float(subline.split()[1]))
+                    else:
+                        return f
+            else:
+                continue
+        else:
+            return None
 
     def scf_convergences(self):
         """
