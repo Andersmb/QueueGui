@@ -32,6 +32,33 @@ class MrchemOut(object):
         else:
             return False
 
+    def charge(self):
+        """
+
+        :return:
+        """
+        for line in self.content:
+            if line.strip().startswith("Charge"):
+                return int(line.split()[2])
+
+    def multiplicity(self):
+        """
+
+        :return:
+        """
+        for line in self.content:
+            if line.strip().startswith("Multiplicity"):
+                return int(line.split()[2])
+
+    def no_electrons(self):
+        """
+
+        :return:
+        """
+        for line in self.content:
+            if line.strip().startswith("Total electrons"):
+                return int(line.split()[3])
+
     def dipole_norm_debye(self):
         """Return the norm of the calculated
         dipole moment vector in Debye (float)"""
