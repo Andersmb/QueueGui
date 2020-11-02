@@ -206,7 +206,7 @@ class MrchemOut(object):
         ax2_h, ax2_l = ax2.get_legend_handles_labels()
 
         plt.legend(ax_h+ax2_h, ax_l+ax2_l, fancybox=True, framealpha=0.5)
-        plt.grid(axis="both")
+        ax.grid(axis="both")
         plt.tight_layout()
         return plt.show()
 
