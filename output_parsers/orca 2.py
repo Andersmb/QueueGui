@@ -105,17 +105,11 @@ class OrcaOut(object):
         """Return the number of geometry cycles needed for convergence. Return an integer."""
         return len(self.geometry_trajectory())
     
-    def no_contracted_basis(self):
-        """Return the number of contracted basis functions (integer)."""
+    def no_basisfunctions(self):
+        """Return the number of basis functions (integer)."""
         for line in self.content:
-            if line.strip().startswith("# of contracted basis functions"):
+            if line.strip().startswith("Basis Dimension"):
                 return int(line.strip().split()[-1])
-
-    def no_primitive_gaussians(self):
-        """Return the number of gaussian primitive functions (integer)."""
-        for line in self.content:
-            if line.strip().startswith('# of primitive gaussian functions'):
-                return int(line.strip()git.split()[-1])
 
     def maxforce(self):
         """Return a list of floats containing all Max Forces for each geometry iteration"""
