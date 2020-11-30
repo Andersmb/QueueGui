@@ -1,6 +1,3 @@
-# TODO Setup up password storage for HPC clusters once. Then log in by clicking on the cluster name
-
-
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter import font

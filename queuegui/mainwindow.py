@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import simpledialog, messagebox
 from collections import OrderedDict
 from datetime import datetime, timedelta
-import shutil
 import os
 import re
 import requests
@@ -21,10 +20,6 @@ import helpers
 from output_parsers.gaussian import GaussianOut
 from output_parsers.orca import OrcaOut
 from output_parsers.mrchem import MrchemOut
-
-
-#TODO use the Job class get job info throughout the code
-
 
 
 class MainWindow(tk.Frame):
@@ -90,6 +85,9 @@ class MainWindow(tk.Frame):
         self.mid.columnconfigure(0, weight=1)
         self.mid.rowconfigure(0, weight=1)
 
+        # Buttons in topleft
+        tk.Button(self.topleft, te)
+
         # Define options and set defaults
         self.jobhisfilter.set("")
         self.job_starttime_options = [datetime.now().date() - timedelta(days=i) for i in
@@ -104,174 +102,6 @@ class MainWindow(tk.Frame):
         self.status_options["Cancelled Jobs"] = "ca"
         self.status_options["Timeouted Jobs"] = "to"
         self.status.set(list(self.status_options.keys())[0])  # set default value to "All Jobs"
-
-        # Define the top menu bar
-        menubar = tk.Menu(self.parent)
-        systemmenu = tk.Menu(menubar)
-        systemmenu.add_command(label="Preferences", command=self.launch_preferences)
-        systemmenu.add_command(label="Log out", command=self.logout)
-        systemmenu.add_separator()
-        systemmenu.add_command(label="Quit", command=self.parent.destroy)
-
-        toolmenu = tk.Menu(menubar)
-        toolmenu.add_command(label="Check CPU Usage", command=self.cpu_usage)
-        toolmenu.add_command(label="Print Orca SCF convergence", command=self.orca_scf_convergence)
-        toolmenu.add_command(label="Plot Orca SCF convergence")
-        toolmenu.add_separator()
-        toolmenu.add_command(label="Kill job range", command=self.kill_range)
-
-        helpmenu = tk.Menu(menubar)
-        helpmenu.add_command(label="User Manual", command=self.show_user_manual)
-        helpmenu.add_command(label=f"About {self.parent.name}", command=self.show_about_page)
-
-        menubar.add_cascade(label="System", menu=systemmenu)
-        menubar.add_cascade(label="Tools", menu=toolmenu)
-        menubar.add_cascade(label="Help", menu=helpmenu)
-        self.master.configure(menu=menubar)
-
-        # Buttons
-        tk.Button(self.topleft,
-                  text="Get queue",
-                  command=self.print_q,
-                  font=self.parent.main_font).grid(row=1, column=0, sticky="ew", pady=5, padx=5)
-        tk.Button(self.topleft,
-                  text="Output file",
-                  command=self.open_output,
-                  font=self.parent.main_font).grid(row=1, column=1, sticky="ew", pady=5, padx=5)
-        tk.Button(self.topleft,
-                  text="Input file",
-                  command=self.open_input,
-                  font=self.parent.main_font).grid(row=1, column=2, sticky="ew", pady=5, padx=5)
-        tk.Button(self.topleft,
-                  text="Job script",
-                  command=self.open_submitscript,
-                  font=self.parent.main_font).grid(row=2, column=0)
-        tk.Button(self.topleft, text="Job info", command=self.open_jobinfo, font=self.parent.main_font).grid(row=2, column=1)
-        tk.Button(self.topleft,
-                  text="Job History",
-                  command=self.get_jobhistory,
-                  font=self.parent.main_font).grid(row=2, column=2)
-        tk.Button(self.topleft,
-                  text="Check CPU usage",
-                  command=self.cpu_usage,
-                  font=self.parent.main_font).grid(row=0, column=2, sticky="ew", pady=5, padx=5)
-        tk.Button(self.topleft,
-                  text="Geometry converg.",
-                  command=self.geometry_convergence,
-                  font=self.parent.main_font).grid(row=1, column=3, sticky="ew", pady=5, padx=5)
-        tk.Button(self.topleft,
-                  text="Visualizer",
-                  command=self.open_visualizer,
-                  font=self.parent.main_font).grid(row=0, column=3, sticky="ew", pady=5, padx=5)
-        tk.Button(self.topleft,
-                  text="SCF converg.",
-                  command=self.mrchem_plot_convergence,
-                  font=self.parent.main_font).grid(row=3, column=3, pady=5, padx=5, sticky="ew")
-        tk.Button(self.topleft,
-                  text="Open .err",
-                  command=self.open_error,
-                  font=self.parent.main_font).grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
-        tk.Button(self.topleft,
-                  text="MRC CHK",
-                  command=self.store_mrchem_checkpoint,
-                  font=self.parent.main_font).grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
-        tk.Button(self.bot,
-                  text="Quit",
-                  command=self.master.destroy,
-                  font=self.parent.main_font,
-                  fg="red",
-                  bg="black").grid(row=0, column=0, pady=5, padx=5)
-        tk.Button(self.bot,
-                  text="Kill Selected Job",
-                  command=self.kill_job,
-                  font=self.parent.main_font).grid(row=0, column=1, pady=5, padx=5)
-        tk.Button(self.bot,
-                  text="Kill All Jobs",
-                  command=self.kill_all_jobs,
-                  font=self.parent.main_font).grid(row=0, column=2, pady=5, padx=5)
-        tk.Button(self.bot,
-                  text="ConvertMe!",
-                  command=self.launch_convertme,
-                  font=self.parent.main_font).grid(row=0, column=3, pady=5, padx=5)
-        tk.Button(self.bot,
-                  text="ToolBox",
-                  command=self.launch_toolbox,
-                  font=self.parent.main_font).grid(row=0, column=4, pady=5, padx=5)
-        tk.Button(self.bot,
-                  text="Backup scratch",
-                  command=self.backup_scratch_files,
-                  font=self.parent.main_font).grid(row=0, column=5, pady=5, padx=5)
-        tk.Button(self.bot,
-                  text="Update curr. file",
-                  command=self.update_current_file,
-                  font=self.parent.main_font).grid(row=0, column=6, pady=5, padx=5)
-
-        # Option Menus
-        optionmenu_jobhis_starttime = tk.OptionMenu(self.topleft, self.job_starttime, *self.job_starttime_options)
-        optionmenu_jobhis_starttime.grid(row=2, column=3, sticky="ew")
-        optionmenu_jobhis_starttime.config(font=self.parent.main_font)
-        optionmenu_jobhis_starttime["menu"].config(font=self.parent.main_font)
-
-        optionmenu_jobstatus = tk.OptionMenu(self.topleft, self.status, *self.status_options.keys())
-        optionmenu_jobstatus.grid(row=0, column=1, sticky="ew", pady=5, padx=5)
-        optionmenu_jobstatus.config(font=self.parent.main_font)
-        optionmenu_jobstatus["menu"].config(font=self.parent.main_font)
-
-        # Entries
-        self.entry_user = tk.Entry(self.topleft, width=10)
-        self.entry_user.grid(row=0, column=0, sticky="ew", pady=5, padx=5)
-        self.entry_user.insert(0, self.parent.user.get())
-        self.entry_user.bind("<Return>", self.print_q)
-
-        self.entry_filter = tk.Entry(self.topleft, width=10)
-        self.entry_filter.grid(row=3, column=1, columnspan=2, sticky="ew", pady=5, padx=5)
-        self.entry_filter.insert(0, self.jobhisfilter.get())
-        self.entry_filter.bind("<Return>", self.filter_textbox)
-
-        # Labels
-        self.label_filter = tk.Label(self.topleft,
-                                     font=self.parent.main_font,
-                                     bg=self.master.background_color.get())
-        self.label_filter["text"] = "Filter in ALL mode:" if self.parent.filter_mode.get() == 0 else "Filter in ANY mode:"
-        self.label_filter.grid(row=3, column=0, sticky="ew", pady=5, padx=5)
-        self.label_filter.bind("<Button-1>", self.update_filter_mode)
-
-        self.filter_mode_gen = helpers.modulo_generator(length=1500, mod=2)
-        next(self.filter_mode_gen)  # Get rid of first element
-
-        self.label_selected_text = tk.Label(self.topleft,
-                                            justify=tk.LEFT,
-                                            text="<Selected PID goes here>",
-                                            bg=self.master.background_color.get(),
-                                            font=self.parent.main_font)
-        self.label_output_last_update = tk.Label(self.topleft,
-                                                 justify=tk.LEFT,
-                                                 textvariable=self.output_last_update,
-                                                 bg=self.master.background_color.get(),
-                                                 font=self.parent.main_font).grid(row=4, column=3)
-
-        self.label_selected_text.grid(row=4, column=0)
-        self.label_selected_text.bind("<Button-2>", self.update_job)
-
-        self.label_monitor_q = tk.Label(self.topleft,
-                                        text="Running: 0\nPending: 0",
-                                        bg=self.master.background_color.get())
-        self.label_monitor_q.grid(row=4, column=1)
-
-        # Current file
-        tk.Label(self.topleft,
-                 textvar=self.current_file,
-                 bg=self.master.background_color.get(),
-                 font=self.parent.main_font).grid(row=5, column=0, columnspan=3, pady=5, padx=5)
-
-        # Check buttons
-        tk.Checkbutton(self.topleft,
-                       text="Monitor queue",
-                       variable=self.do_queue_monitoring,
-                       bg=self.master.background_color.get(),
-                       command=self.monitor_q,
-                       onvalue=True,
-                       offvalue=False).grid(row=4, column=2)
 
         # Scroll bars
         q_yscrollbar = tk.Scrollbar(self.mid)
@@ -318,17 +148,6 @@ class MainWindow(tk.Frame):
         self.txt.tag_raise(tk.SEL)
 
         # Bind keyboard shortcuts to the most important buttons
-        self.parent.bind("<Control-o>", self.open_output)
-        self.parent.bind("<Control-i>", self.open_input)
-        self.parent.bind("<Control-g>", self.geometry_convergence)
-        self.parent.bind("<Control-q>", self.print_q)
-        self.parent.bind("<Control-j>", self.get_jobhistory)
-        self.parent.bind("<Control-c>", self.cpu_usage)
-        self.parent.bind("<Control-v>", self.open_visualizer)
-        self.parent.bind("<Control-s>", self.open_submitscript)
-        self.parent.bind("<Control-x>", self.kill_job)
-        self.parent.bind("<Control-X>", self.kill_all_jobs)
-        self.parent.bind("<Control-p>", self.launch_preferences)
         self.parent.bind("<Control-l>", self.logout)
 
         # Bind shortcut for opening a textbox dialog for entering simple shell commands that
@@ -505,7 +324,7 @@ class MainWindow(tk.Frame):
         if self.do_queue_monitoring.get():
             self.print_q()
 
-        self.label_monitor_q["text"] = f"Running: {running}\nPending: {pending}"
+        #self.label_monitor_q["text"] = f"Running: {running}\nPending: {pending}"
         self.master.after(self.parent.queue_monitor_update_frequency.get(), self.monitor_q)
 
     def print_q(self, *args):
@@ -515,7 +334,7 @@ class MainWindow(tk.Frame):
         :return:
         """
         self.current_file.set("")
-        self.user.set(self.entry_user.get())
+        #self.user.set(self.entry_user.get())
         self.status.set(self.status_options[self.status.get()])
 
         if self.user.get().strip() == "":
@@ -778,9 +597,6 @@ class MainWindow(tk.Frame):
 
         return plt.show()
 
-    def scf_convergence(self, *args):
-        self.log_update("Not implemented")
-
     def cpu_usage(self, *args):
         """
         Count the number of running and pending CPUS for all users, and display
@@ -1031,20 +847,6 @@ class MainWindow(tk.Frame):
         self.sftp_client.get(outputfile, destination)
         return MrchemOut(destination).plot_scf_energy(title=pid)
 
-    def orca_scf_convergence(self):
-        pid = self.selected_text.get()
-        outputfile = self.locate_output_file(pid)
-        destination = os.path.join(self.master.temp_dir, os.path.basename(outputfile))
-
-        self.sftp_client.get(outputfile, destination)
-
-        data = OrcaOut(destination).scf_convergences()
-        self.txt.delete(1.0, tk.END)
-        for cycle in data:
-            for scf in cycle:
-                self.txt.insert(tk.END, scf+"\n")
-            self.txt.insert(tk.END, "\n")
-
     def get_scratch(self):
         if self.master.host.get() == "stallo":
             return helpers.remote_join(self.parent.current_settings["paths"]["scratch_stallo"], self.user.get())
@@ -1293,25 +1095,19 @@ class MainWindow(tk.Frame):
         for line in lines:
             # Test if Gaussian
             if "Entering Gaussian System" in line.strip():
-                #self.log_update("Gaussian file detected")
                 self.parent.debug("Gaussian output detected")
                 return True, False, False
             # Test if ORCA
             elif "Directorship: Frank Neese" in line.strip():
-                #self.log_update("ORCA file detected")
                 self.parent.debug("ORCA output detected")
                 return False, True, False
             # Test if MRChem
             elif "Stig Rune Jensen" in line:
-                #self.log_update("MRChem file detected")
                 self.parent.debug("MRChem output detected")
                 return False, False, True
         else:
             self.log_update("Source of output not found. ErrorCode kux81")
             return "ErrorCode kux81"
-
-    def update_job(self, event):
-        return UpdateJob(self, self.selected_text.get(), self.parent.user.get())
 
     def backup_scratch_files(self):
         """Copy all important files back to the workdir. This can be done if
@@ -1427,96 +1223,3 @@ class MainWindow(tk.Frame):
             os.system(cmd_msg)
 
         return
-
-class UpdateJob(tk.Toplevel):
-    def __init__(self, parent, pid, user):
-        tk.Toplevel.__init__(self, parent)
-        self.parent = parent
-        self.pid = pid
-        self.user = user
-        self.job = Job(self.parent.ssh_client, self.pid)
-
-        self.account = tk.StringVar()
-        self.account.set(self.job.get_info("Account"))
-
-        self.frame = tk.Frame(self)
-        self.frame.grid(row=0, column=0)
-
-        tk.Label(self.frame, text=f"Update Job Parameters for Job {self.pid}", font=self.parent.parent.main_font).grid(row=0, column=0)
-
-        tk.Button(self.frame, text="Close", font=self.parent.parent.main_font,
-                  command=self.destroy).grid(row=99, column=0, sticky=tk.W)
-        tk.Button(self.frame, text="Update Job", font=self.parent.parent.main_font,
-                  command=self.update).grid(row=98, column=0, sticky=tk.W)
-
-        tk.Label(self.frame, text="Account", font=self.parent.parent.main_font).grid(row=1, column=0, sticky=tk.W)
-        tk.Label(self.frame, text="Memory per node (MB)", font=self.parent.parent.main_font).grid(row=2, column=0, sticky=tk.W)
-        tk.Label(self.frame, text="Time limit (d-hh:mm:ss)", font=self.parent.parent.main_font).grid(row=3, column=0, sticky=tk.W)
-        tk.Label(self.frame, text="Number of nodes", font=self.parent.parent.main_font).grid(row=4, column=0, sticky=tk.W)
-
-        self.optmenu_account = tk.OptionMenu(self.frame, self.account, *self.get_all_accounts())
-        self.optmenu_account.config(font=self.parent.parent.main_font)
-        self.optmenu_account["menu"].config(font=self.parent.parent.main_font)
-        self.e_mem = tk.Entry(self.frame, width=10, font=self.parent.parent.main_font)
-        self.e_time = tk.Entry(self.frame, width=10, font=self.parent.parent.main_font)
-        self.e_node = tk.Entry(self.frame, width=10, font=self.parent.parent.main_font)
-        self.optmenu_account.grid(row=1, column=1, sticky=tk.W)
-        self.e_mem.grid(row=2, column=1, sticky=tk.W)
-        self.e_time.grid(row=3, column=1, sticky=tk.W)
-        self.e_node.grid(row=4, column=1, sticky=tk.W)
-
-        self.e_mem.insert(0, self.job.get_info("MinMemoryNode"))
-        self.e_time.insert(0, self.job.get_info("TimeLimit"))
-        self.e_node.insert(0, self.job.get_info("Nodes"))
-
-    def update(self):
-        self.parent.log_update(f"Updating job {self.pid}")
-        self.parent.parent.debug("Updating job parameters", header=True)
-
-        cmds = [f"scontrol update jobid {self.pid} account {self.account.get()}",
-                f"scontrol update jobid {self.pid} timelimit {self.e_time.get()}",
-                f"scontrol update jobid {self.pid} numnodes {self.e_node.get()}",
-                f"scontrol update jobid {self.pid} minmemorynode {self.e_mem.get()}"]
-
-        for cmd in cmds:
-            stdin, stdout, stderr = self.parent.ssh_client.exec_command(cmd)
-            err = stderr.read().decode('ascii').strip()
-            self.parent.log_update(f"...command: {cmd}")
-            self.parent.log_update(f"...stderr: {err}")
-
-            self.parent.parent.debug(f"...running command: {cmd}")
-            self.parent.parent.debug(f"...stderr: {err}")
-
-    def get_all_accounts(self):
-        self.parent.parent.debug(f"Getting active accounts for user={self.user}", header=True)
-        host = self.parent.parent.host.get()
-        pattern = re.compile(r"[a-zA-Z]{2}[0-9]{4}k")  # This will match all accounts at uninett
-
-        if host == "stallo":
-            cmd = "/global/apps/gold/2.1.5.0/bin/cost"
-            self.parent.parent.debug(f"...command to send: {cmd}")
-
-            stdin, stdout, stderr = self.parent.ssh_client.exec_command(cmd)
-            self.parent.parent.debug("...command sent to cluster")
-            output = stdout.read().decode("ascii")
-
-            self.parent.parent.debug(f"...RE pattern: {pattern}")
-
-            accounts = set(pattern.findall(output))
-            self.parent.parent.debug(f"...matched user accounts: {', '.join(accounts)}")
-            return list(accounts)
-
-        else:
-            cmd = "/cluster/bin/cost"
-            self.parent.parent.debug(f"Command to send: {cmd}")
-
-            stdin, stdout, stderr = self.parent.ssh_client.exec_command(cmd)
-            self.parent.parent.debug("...command sent to cluster")
-            output = stdout.read().decode("ascii")
-            print("output", output)
-
-            self.parent.parent.debug(f"...RE pattern: {pattern}")
-
-            accounts = set(pattern.findall(output))
-            self.parent.parent.debug(f"...matched user accounts: {', '.join(accounts)}")
-            return list(accounts)

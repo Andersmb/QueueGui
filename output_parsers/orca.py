@@ -115,7 +115,7 @@ class OrcaOut(object):
         """Return the number of gaussian primitive functions (integer)."""
         for line in self.content:
             if line.strip().startswith('# of primitive gaussian functions'):
-                return int(line.strip()git.split()[-1])
+                return int(line.strip().split()[-1])
 
     def maxforce(self):
         """Return a list of floats containing all Max Forces for each geometry iteration"""
