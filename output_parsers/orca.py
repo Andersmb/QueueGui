@@ -27,9 +27,10 @@ class OrcaOut(object):
         for i, line in enumerate(self.content):
             if line.strip().startswith("CARTESIAN COORDINATES (ANGSTROEM)"):
                 traj.append(self.content[i+2:i+self.no_atoms()+2])
+
         # Strip all white space and newilne characters in traj
 
-        return [[helpers.splitjoin(atom) for atom in geom] for geom in traj]
+        return [[helpers.splitjoin(atom) for atom in geom if atom.strip() != ''] for geom in traj]
 
     def no_atoms(self):
         """
@@ -254,15 +255,14 @@ class OrcaOut(object):
 
     def dispersion_correction(self):
         """
-        Return the last print statement of the Dispersion correction. If not found,
-        raise NoDispersionCorrection exception.
+        Return all prints of dispersion corrections (usable for SPs, GOs and CP compound jobs)
         :return:
         """
-        for line in reversed(self.content):
-            if line.strip().startswith("Dispersion correction  ") and len(line.split()) == 3:
-                return float(line.split()[-1])
-        else:
-            raise NoDispersionCorrection("No dispersion correction found")
+        d = []
+        for line in self.content:
+            if line.strip().startswith('Dispersion correction') and len(line.split()) == 3:
+                d.append(float(line.split()[-1]))
+        return d
 
     def zero_point_energy_correction(self):
         """
